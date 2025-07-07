@@ -1,0 +1,118 @@
+import React from 'react';
+import TestRenderer from 'react-test-renderer';
+import BankLinkingScreen from './bank-linking';
+import { usePlaidLink } from 'react-plaid-link';
+import { useRouter } from 'expo-router';
+
+// Mock the react-plaid-link hook
+jest.mock('react-plaid-link', () => ({
+  usePlaidLink: jest.fn(),
+}));
+
+// Mock the expo-router
+jest.mock('expo-router', () => ({
+  useRouter: jest.fn(),
+}));
+
+// Mock fetch
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ link_token: 'mock-link-token' }),
+  })
+) as jest.Mock;
+
+describe('BankLinkingScreen', () => {
+  const mockOpen = jest.fn();
+  const mockPush = jest.fn();
+
+  beforeEach(() => {
+    (usePlaidLink as jest.Mock).mockReturnValue({
+      open: mockOpen,
+      ready: true,
+    });
+    (useRouter as jest.Mock).mockReturnValue({
+      push: mockPush,
+    });
+    jest.clearAllMocks();
+  });
+
+  it('renders the connect button when a link token is available', async () => {
+    const testRenderer = TestRenderer.create(<BankLinkingScreen />);
+    const testInstance = testRenderer.root;
+
+    await TestRenderer.act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(testInstance.findByProps({ children: 'Connect a Bank Account' })).toBeTruthy();
+  });
+
+  it('calls the open function from usePlaidLink when the connect button is pressed', async () => {
+    const testRenderer = TestRenderer.create(<BankLinkingScreen />);
+    const testInstance = testRenderer.root;
+
+    await TestRenderer.act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const connectButton = testInstance.findByProps({ children: 'Connect a Bank Account' });
+    TestRenderer.act(() => {
+        connectButton.props.onPress();
+    });
+    expect(mockOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a success message and continue button after a successful link', async () => {
+    const mockUsePlaidLinkWithSuccess = {
+      open: jest.fn(),
+      ready: true,
+    };
+    (usePlaidLink as jest.Mock).mockImplementation(({ onSuccess }) => {
+      React.useEffect(() => {
+        if (onSuccess) {
+          onSuccess('mock-public-token', { institution_id: 'ins_123', accounts: [] });
+        }
+      }, [onSuccess]);
+      return mockUsePlaidLinkWithSuccess;
+    });
+
+    const testRenderer = TestRenderer.create(<BankLinkingScreen />);
+    const testInstance = testRenderer.root;
+
+    await TestRenderer.act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(testInstance.findByProps({ children: 'Account linked successfully!' })).toBeTruthy();
+    expect(testInstance.findByProps({ children: 'Continue' })).toBeTruthy();
+  });
+
+  it('navigates to the tabs layout when continue is pressed', async () => {
+    const mockUsePlaidLinkWithSuccess = {
+      open: jest.fn(),
+      ready: true,
+    };
+    (usePlaidLink as jest.Mock).mockImplementation(({ onSuccess }) => {
+        React.useEffect(() => {
+            if (onSuccess) {
+                onSuccess('mock-public-token', { institution_id: 'ins_123', accounts: [] });
+            }
+        }, [onSuccess]);
+        return mockUsePlaidLinkWithSuccess;
+    });
+
+    const testRenderer = TestRenderer.create(<BankLinkingScreen />);
+    const testInstance = testRenderer.root;
+
+    await TestRenderer.act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const continueButton = testInstance.findByProps({ children: 'Continue' });
+    TestRenderer.act(() => {
+        continueButton.props.onPress();
+    });
+    expect(mockPush).toHaveBeenCalledWith('/(tabs)');
+  });
+}); 
