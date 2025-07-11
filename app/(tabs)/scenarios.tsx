@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Calculator, TrendingUp, TrendingDown, DollarSign, Percent, Calendar } from 'lucide-react-native';
+import { Calculator, TrendingUp, TrendingDown, DollarSign, Percent, Calendar, BarChart3 } from 'lucide-react-native';
+import { LineChart } from 'react-native-chart-kit';
 
 const scenarioTypes = [
   {
@@ -97,6 +98,43 @@ export default function ScenariosScreen() {
   };
 
   const result = getScenarioResult();
+
+  // Cash flow projection for next 6 months
+  const generateCashFlowProjection = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const monthlyIncome = 5000; // Estimated monthly income
+    const baseExpenses = 2152.50; // Current - spendable = base expenses
+    const scenarioImpact = result.amount || 0;
+
+    const incomeData = months.map(() => monthlyIncome);
+    const expenseData = months.map(() => baseExpenses + (result.isPositive ? 0 : scenarioImpact));
+    const netCashFlow = months.map((_, index) => incomeData[index] - expenseData[index]);
+
+    return {
+      labels: months,
+      datasets: [
+        {
+          data: incomeData,
+          color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`, // Green for income
+          strokeWidth: 3,
+        },
+        {
+          data: expenseData,
+          color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`, // Red for expenses
+          strokeWidth: 3,
+        },
+        {
+          data: netCashFlow,
+          color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`, // Blue for net flow
+          strokeWidth: 3,
+        }
+      ],
+      legend: ['Income', 'Expenses', 'Net Cash Flow']
+    };
+  };
+
+  const cashFlowData = generateCashFlowProjection();
+  const screenWidth = Dimensions.get('window').width;
 
   return (
     <View style={styles.container}>
@@ -316,6 +354,76 @@ export default function ScenariosScreen() {
             </View>
           </View>
         )}
+
+        {/* Cash Flow Projection */}
+        <View style={styles.section}>
+          <View style={styles.chartHeader}>
+            <BarChart3 size={24} color="#34D399" />
+            <Text style={styles.sectionTitle}>6-Month Cash Flow Projection</Text>
+          </View>
+          
+          <View style={styles.chartCard}>
+            <Text style={styles.chartDescription}>
+              {result.amount > 0 
+                ? `Including your scenario, here's how your finances would look over the next 6 months:`
+                : `See how your current scenario affects your projected cash flow:`
+              }
+            </Text>
+            
+            <View style={styles.chartContainer}>
+              <LineChart
+                data={cashFlowData}
+                width={screenWidth - 80}
+                height={220}
+                yAxisLabel="$"
+                yAxisSuffix=""
+                yAxisInterval={1}
+                chartConfig={{
+                  backgroundColor: '#1F2937',
+                  backgroundGradientFrom: '#1F2937',
+                  backgroundGradientTo: '#111827',
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`,
+                  style: {
+                    borderRadius: 16,
+                  },
+                  propsForDots: {
+                    r: '4',
+                    strokeWidth: '2',
+                  },
+                  propsForBackgroundLines: {
+                    strokeDasharray: '',
+                    stroke: 'rgba(55, 65, 81, 0.3)',
+                  },
+                }}
+                bezier
+                style={styles.chart}
+              />
+            </View>
+
+            <View style={styles.chartLegend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
+                <Text style={styles.legendText}>Monthly Income</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
+                <Text style={styles.legendText}>Monthly Expenses</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+                <Text style={styles.legendText}>Net Cash Flow</Text>
+              </View>
+            </View>
+
+            <View style={styles.projectionNote}>
+              <Text style={styles.projectionNoteText}>
+                💡 This projection is based on your current spending patterns and includes the impact of your selected scenario.
+              </Text>
+            </View>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -324,23 +432,24 @@ export default function ScenariosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#111827', // Dark background
   },
   header: {
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 24,
+    backgroundColor: '#1F2937', // Slightly lighter dark shade for header
   },
   headerTitle: {
     fontSize: 24,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
   },
   content: {
     flex: 1,
@@ -351,26 +460,25 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
+    borderColor: 'rgba(52, 211, 153, 0.2)',
   },
   currentStateTitle: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
-    color: '#10B981',
+    color: '#34D399', // Bright green
     marginBottom: 8,
   },
   currentStateAmount: {
     fontSize: 32,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   currentStateSubtitle: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
   },
   section: {
     marginBottom: 24,
@@ -378,22 +486,22 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 16,
   },
   scenarioGrid: {
     gap: 12,
   },
   scenarioCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#1F2937', // Dark card
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#374151', // Dark border
   },
   scenarioCardSelected: {
-    borderColor: '#10B981',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderColor: '#34D399', // Bright green border
+    backgroundColor: 'rgba(52, 211, 153, 0.1)',
   },
   scenarioIcon: {
     width: 48,
@@ -406,24 +514,24 @@ const styles = StyleSheet.create({
   scenarioTitle: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   scenarioDescription: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
     lineHeight: 20,
   },
   inputCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#1F2937', // Dark card
     borderRadius: 12,
     padding: 20,
   },
   inputCardTitle: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 16,
   },
   inputGroup: {
@@ -432,17 +540,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 8,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#111827', // Darker input background
     borderRadius: 8,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#374151',
   },
   textInput: {
     flex: 1,
@@ -450,17 +558,17 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
   },
   textInputFull: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#111827', // Darker input background
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#374151',
   },
   taxNote: {
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -471,7 +579,7 @@ const styles = StyleSheet.create({
   taxNoteText: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#3B82F6',
+    color: '#60A5FA', // Light blue
   },
   resultCard: {
     borderRadius: 16,
@@ -480,7 +588,7 @@ const styles = StyleSheet.create({
   },
   positiveResult: {
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   negativeResult: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -495,7 +603,7 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
   },
   resultAmount: {
     fontSize: 20,
@@ -514,13 +622,13 @@ const styles = StyleSheet.create({
   comparisonLabel: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
     marginBottom: 4,
   },
   comparisonValue: {
     fontSize: 16,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
   },
   comparisonArrow: {
     marginHorizontal: 16,
@@ -533,8 +641,66 @@ const styles = StyleSheet.create({
   impactSummaryText: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#E2E8F0',
+    color: '#E5E7EB', // Off-white
     textAlign: 'center',
     lineHeight: 20,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  chartCard: {
+    backgroundColor: '#1F2937', // Dark card
+    borderRadius: 16,
+    padding: 20,
+  },
+  chartDescription: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF', // Lighter grey
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  chartContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+  chartLegend: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  legendText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF', // Lighter grey
+  },
+  projectionNote: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+  },
+  projectionNoteText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#60A5FA', // Light blue
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

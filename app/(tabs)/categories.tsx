@@ -290,23 +290,24 @@ export default function CategoriesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#111827', // Dark background
   },
   header: {
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 24,
+    backgroundColor: '#1F2937', // Slightly lighter dark shade for header
   },
   headerTitle: {
     fontSize: 24,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
   },
   content: {
     flex: 1,
@@ -316,14 +317,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   categoryCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#1F2937', // Dark card background
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#374151',
   },
   categoryCardAlert: {
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderColor: 'rgba(245, 158, 11, 0.5)',
   },
   categoryHeader: {
     flexDirection: 'row',
@@ -352,13 +354,13 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginRight: 8,
   },
   categoryTransactions: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
   },
   categoryRight: {
     alignItems: 'flex-end',
@@ -366,7 +368,7 @@ const styles = StyleSheet.create({
   categoryAmount: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   trendContainer: {
@@ -390,7 +392,7 @@ const styles = StyleSheet.create({
   spikeAlertText: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#F59E0B',
+    color: '#FBBF24', // Brighter yellow
     flex: 1,
   },
   whyButton: {
@@ -402,7 +404,7 @@ const styles = StyleSheet.create({
   whyButtonText: {
     fontSize: 12,
     fontFamily: 'Inter-Medium',
-    color: '#F59E0B',
+    color: '#FBBF24', // Brighter yellow
     marginLeft: 4,
   },
   progressBarContainer: {
@@ -412,7 +414,7 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#374151', // Darker grey for progress bar background
     borderRadius: 3,
     marginRight: 12,
   },
@@ -423,13 +425,13 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
     minWidth: 80,
     textAlign: 'right',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#111827', // Dark background for modal
   },
   modalHeader: {
     flexDirection: 'row',
@@ -439,12 +441,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: '#374151',
   },
   modalTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
   },
   closeButton: {
     padding: 8,
@@ -456,7 +458,7 @@ const styles = StyleSheet.create({
   modalStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#1F2937', // Darker card
     borderRadius: 12,
     padding: 20,
     marginBottom: 24,
@@ -467,23 +469,23 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
   },
   transactionsList: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: '#1F2937', // Darker card
     borderRadius: 12,
     padding: 16,
   },
   transactionsTitle: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 16,
   },
   transactionItem: {
@@ -492,23 +494,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: '#374151',
   },
   transactionMerchant: {
     fontSize: 14,
     fontFamily: 'Inter-Medium',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 2,
   },
   transactionDate: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
   },
   transactionAmount: {
     fontSize: 14,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
   },
   overlayContainer: {
     flex: 1,
@@ -518,7 +520,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   whyModal: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1F2937', // Dark modal
     borderRadius: 16,
     padding: 24,
     width: '100%',
@@ -527,14 +529,14 @@ const styles = StyleSheet.create({
   whyModalTitle: {
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     marginBottom: 8,
     textAlign: 'center',
   },
   whyModalSubtitle: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#94A3B8',
+    color: '#9CA3AF', // Lighter grey
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -543,17 +545,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   reasonButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#374151', // Darker button
     borderRadius: 8,
     padding: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#4B5563',
   },
   reasonText: {
     fontSize: 16,
     fontFamily: 'Inter-Medium',
-    color: '#FFFFFF',
+    color: '#F9FAFB', // Light text
     textAlign: 'center',
   },
   skipReasonButton: {
@@ -563,6 +565,6 @@ const styles = StyleSheet.create({
   skipReasonText: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#64748B',
+    color: '#6B7280', // Darker grey
   },
 });

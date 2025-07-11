@@ -1,11 +1,50 @@
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Sparkles, Shield, TrendingUp } from 'lucide-react-native';
+import { useSession } from '@/hooks/useSession';
+import React, { useEffect, useState } from 'react';
 
+const API_URL = 'http://127.0.0.1:8000'; // Using the same hardcoded URL as the dashboard
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
+  const { setAccessToken } = useSession();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const tryStartSession = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/session/start`, {
+          method: 'POST',
+        });
+        const data = await response.json();
+        if (response.ok && data.accessToken) {
+          await setAccessToken(data.accessToken);
+          router.replace('/(tabs)');
+        } else {
+          // No data found on the backend, so we'll show the welcome screen.
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to start session automatically', error);
+        setIsLoading(false); // Show the welcome screen on error
+      }
+    };
+
+    tryStartSession();
+  }, [setAccessToken, router]);
+
+
+  if (isLoading) {
+    return (
+      <LinearGradient colors={['#0F172A', '#1E293B']} style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FFFFFF" />
+        <Text style={styles.loadingText}>Checking for existing data...</Text>
+      </LinearGradient>
+    );
+  }
+
   return (
     <LinearGradient
       colors={['#0F172A', '#1E293B', '#334155']}
@@ -42,7 +81,7 @@ export default function WelcomeScreen() {
 
         <TouchableOpacity
           style={styles.getStartedButton}
-          onPress={() => router.push('/onboarding/bank-linking')}
+          onPress={() => router.push('/onboarding/auth')}
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Get Started</Text>
@@ -133,5 +172,17 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#94A3B8',
   },
 });

@@ -31,6 +31,9 @@ yarn-error.*
 .env*.local
 .env
 
+# private data files (sensitive financial data)
+env/
+
 # typescript
 *.tsbuildinfo
 

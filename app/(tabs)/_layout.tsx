@@ -4,75 +4,60 @@ import { Chrome as Home, ChartPie as PieChart, Target, Calculator, FileText, Cod
 export default function TabLayout() {
   return (
     <Tabs
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1E293B',
-          borderTopColor: '#334155',
-          borderTopWidth: 1,
-          height: 70,
-          paddingBottom: 8,
-          paddingTop: 8,
+          backgroundColor: '#111827', // Darker background
+          borderTopColor: '#1F2937',
+          height: 90,
         },
-        tabBarActiveTintColor: '#10B981',
-        tabBarInactiveTintColor: '#64748B',
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontFamily: 'Inter-Medium',
+        tabBarActiveTintColor: '#34D399', // Brighter green for active
+        tabBarInactiveTintColor: '#6B7280', // Muted grey for inactive
+        tabBarShowLabel: false,
+        tabBarIcon: ({ size, color, focused }) => {
+          const icons: { [key: string]: React.ElementType } = {
+            index: Home,
+            categories: PieChart,
+            goals: Target,
+            scenarios: Calculator,
+            scratchpad: FileText,
+          };
+          const Icon = icons[route.name];
+          return <Icon size={focused ? size * 1.2 : size} color={color} />;
         },
-      }}>
+        // Apply dark background to all screens in the layout
+        sceneContainerStyle: {
+            backgroundColor: '#111827'
+        }
+      })}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ size, color }) => (
-            <Home size={size} color={color} />
-          ),
         }}
       />
       <Tabs.Screen
         name="categories"
         options={{
           title: 'Categories',
-          tabBarIcon: ({ size, color }) => (
-            <PieChart size={size} color={color} />
-          ),
         }}
       />
       <Tabs.Screen
         name="goals"
         options={{
           title: 'Goals',
-          tabBarIcon: ({ size, color }) => (
-            <Target size={size} color={color} />
-          ),
         }}
       />
       <Tabs.Screen
         name="scenarios"
         options={{
           title: 'What If',
-          tabBarIcon: ({ size, color }) => (
-            <Calculator size={size} color={color} />
-          ),
         }}
       />
       <Tabs.Screen
         name="scratchpad"
         options={{
           title: 'Notes',
-          tabBarIcon: ({ size, color }) => (
-            <FileText size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="build-log"
-        options={{
-          title: 'Build Log',
-          tabBarIcon: ({ size, color }) => (
-            <Code size={size} color={color} />
-          ),
         }}
       />
     </Tabs>

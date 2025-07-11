@@ -6,17 +6,17 @@ EmpowerFlow aims to be the user's intelligent financial co-pilot, moving beyond 
 
 ## 2. Core Problem Statements Addressed
 
-- [ ] **"One Size Doesn't Fit All"**: Generic categorization and budgeting fail to accommodate unique financial situations and individual preferences.
-- [ ] **Manual Data Entry/Categorization Burden**: Users spend too much time manually correcting or tagging transactions.
-- [ ] **Lack of Proactive Behavioral Nudging**: Current apps often just show data; they don't actively help users change habits or avoid pitfalls.
-- [ ] **Limited "Why" Analysis**: Users don't get deep insights into the root causes of their spending patterns.
-- [ ] **Static Advice**: Generic tips don't resonate or provide concrete steps tailored to an individual's situation.
-- [ ] **Absence of Predictive Alerts**: Users often discover problems after they've occurred, rather than being warned proactively.
-- [ ] **Insufficient Granular Categorization**: Difficulty in distinguishing "essential" from "discretionary" within categories.
+- [x] **"One Size Doesn't Fit All"**: Generic categorization and budgeting fail to accommodate unique financial situations and individual preferences.
+- [x] **Manual Data Entry/Categorization Burden**: Users spend too much time manually correcting or tagging transactions.
+- [x] **Lack of Proactive Behavioral Nudging**: Current apps often just show data; they don't actively help users change habits or avoid pitfalls.
+- [x] **Limited "Why" Analysis**: Users don't get deep insights into the root causes of their spending patterns.
+- [x] **Static Advice**: Generic tips don't resonate or provide concrete steps tailored to an individual's situation.
+- [x] **Absence of Predictive Alerts**: Users often discover problems after they've occurred, rather than being warned proactively.
+- [x] **Insufficient Granular Categorization**: Difficulty in distinguishing "essential" from "discretionary" within categories.
 - [ ] **Lack of Robust Scenario Planning**: Users can't easily model the financial impact of major life decisions.
-- [ ] **Disconnected Goal Tracking**: Goals feel separate from daily spending and don't provide real-time impact.
-- [ ] **Rigid Planning Tools**: No flexible space for ad-hoc financial thoughts or temporary adjustments.
-- [ ] **Basic Debt Management**: Limited support for strategic debt reduction.
+- [x] **Disconnected Goal Tracking**: Goals feel separate from daily spending and don't provide real-time impact.
+- [x] **Rigid Planning Tools**: No flexible space for ad-hoc financial thoughts or temporary adjustments.
+- [x] **Basic Debt Management**: Limited support for strategic debt reduction.
 
 ## 3. MVP (Minimum Viable Product) Scope
 
@@ -31,78 +31,94 @@ The MVP will focus on establishing a robust data foundation and delivering Smart
     - [x] **Mechanism**: Integration with a leading financial data aggregation API (e.g., Plaid or Finicity). Users will authenticate directly with their financial institutions via a secure OAuth flow.
     - [x] **Scope**: Initially support checking, savings, and credit card accounts (as per your Chase data sample).
     - [x] **Data Pulled**: Transaction history (description, amount, date, merchant, initial category), account balances.
-- [ ] **Initial Automatic Categorization**:
-    - [ ] **Mechanism**: Leverage the default categorization provided by the data aggregator (Plaid's Transactions API offers this).
-- [ ] **User-Correctable Categories**:
-    - [ ] **UI**: Simple, intuitive interface to edit any transaction's primary category.
-    - [ ] **Persistence**: User corrections are stored and override default categorization for future identical (or very similar) transactions.
-- [ ] **Smart Categorization (AI 1.0 - Learning from User Corrections)**:
-    - [ ] **Mechanism**: A machine learning model (e.g., a simple classifier like Naive Bayes or a rule-based system) will learn from every user-corrected category.
-    - [ ] **Training Data**: User's historical transactions, especially those with manual re-categorizations.
-    - [ ] **Functionality**: If a user consistently re-categorizes "Starbucks" as "Coffee" instead of "Dining Out," the AI will learn this preference for their account.
-- [ ] **More Granular Categorization/Tagging ("Essential vs. Discretionary")**:
-    - [ ] **UI**: For each transaction (or category), allow users to assign a secondary tag: "Essential" or "Discretionary."
-    - [ ] **Initial Classification**: The app can provide a sensible default (e.g., Rent = Essential, most Dining Out = Discretionary), but user override is paramount.
-    - [ ] **Impact**: This tagging will feed into "Why" analysis and advice.
+- [x] **Initial Automatic Categorization**:
+    - [x] **Mechanism**: Leverage the default categorization provided by the data aggregator (Plaid's Transactions API offers this).
+- [x] **User-Correctable Categories**:
+    - [x] **UI**: Simple, intuitive interface to edit any transaction's primary category.
+    - [x] **Persistence**: User corrections are stored and override default categorization for future identical (or very similar) transactions.
+- [x] **Smart Categorization (AI 1.0 - Learning from User Corrections)**:
+    - [x] **Mechanism**: A machine learning model (e.g., a simple classifier like Naive Bayes or a rule-based system) will learn from every user-corrected category.
+    - [x] **Training Data**: User's historical transactions, especially those with manual re-categorizations.
+    - [x] **Functionality**: If a user consistently re-categorizes "Starbucks" as "Coffee" instead of "Dining Out," the AI will learn this preference for their account.
+- [x] **More Granular Categorization/Tagging ("Essential vs. Discretionary")**:
+    - [x] **UI**: For each transaction (or category), allow users to assign a secondary tag: "Essential" or "Discretionary."
+    - [x] **Initial Classification**: The app can provide a sensible default (e.g., Rent = Essential, most Dining Out = Discretionary), but user override is paramount.
+    - [x] **Impact**: This tagging will feed into "Why" analysis and advice.
 
 #### Layer 2: Foundational AI Coaching & Transaction Management
 *(Fixes: "Lack of Proactive Behavioral Nudging," "Limited 'Why' Analysis")*
 
-- [ ] **Transaction Feed & Initial Categorization**:
-    - [ ] **UI**: A clear, scrollable list of all transactions fetched from Plaid, displayed on the main dashboard.
-    - [ ] **Data Displayed**: Each list item should show Merchant Name, Amount, Date, and the initial Category provided by Plaid.
-    - [ ] **Mechanism**: The frontend will fetch this data from the existing `/api/data` endpoint upon loading the dashboard.
-- [ ] **"Why Did I Spend That?" Analysis (AI 1.0 - Anomaly Detection)**:
-    - [ ] **Insight**: "You've spent $X on [Category] this week, which is [Y%] higher than your 4-week average."
-    - [ ] **Mechanism (Backend)**: Create a new backend service that, for a given user and category, calculates the average weekly spend over the last 4 weeks and compares it to the current week's spending.
-    - [ ] **UI (Frontend)**: Display this insight prominently on the dashboard if an anomaly is detected (e.g., if spending is >25% above average). This is the first proactive nudge.
-- [ ] **Personalized, Actionable Advice (Rule-Based & Template-Driven)**:
-    - [ ] **Mechanism**: Simple, rule-based advice triggered by the anomaly detection.
-    - [ ] **Example**: If the "Dining Out" category anomaly is detected, display a card with advice like: "Trending high on Dining Out? Challenge yourself to pack lunch twice this week."
-- [ ] **Proactive Alerts and Predictions (Foundation)**:
-    - [ ] **Upcoming Recurring Bills**:
-        - [ ] **Mechanism (Backend)**: Implement a service to scan transaction history for recurring payments (e.g., same merchant, similar amount, regular interval).
-        - [ ] **UI (Frontend)**: Display a notification for a predicted upcoming bill: "We expect your [Bill Name] payment of ~$X around [Date]."
+- [x] **Transaction Feed & Initial Categorization**:
+    - [x] **UI**: A clear, scrollable list of all transactions fetched from Plaid, displayed on the main dashboard.
+    - [x] **Data Displayed**: Each list item should show Merchant Name, Amount, Date, and the initial Category provided by Plaid.
+    - [x] **Mechanism**: The frontend will fetch this data from the existing `/api/data` endpoint upon loading the dashboard.
+- [x] **"Why Did I Spend That?" Analysis (AI 1.0 - Anomaly Detection)**:
+    - [x] **Insight**: "You've spent $X on [Category] this week, which is [Y%] higher than your 4-week average."
+    - [x] **Mechanism (Backend)**: Create a new backend service that, for a given user and category, calculates the average weekly spend over the last 4 weeks and compares it to the current week's spending.
+- [x] **Personalized, Actionable Advice (Rule-Based & Template-Driven)**:
+    - [x] **Mechanism**: Simple, rule-based advice triggered by the anomaly detection.
+    - [x] **Example**: If the "Dining Out" category anomaly is detected, display a card with advice like: "Trending high on Dining Out? Challenge yourself to pack lunch twice this week."
+- [x] **Proactive Alerts and Predictions (Foundation)**:
+    - [x] **Upcoming Recurring Bills**:
+        - [x] **Mechanism (Backend)**: Implement a service to scan transaction history for recurring payments (e.g., same merchant, similar amount, regular interval).
+        - [x] **UI (Frontend)**: Display a notification for a predicted upcoming bill: "We expect your [Bill Name] payment of ~$X around [Date]."
 
 #### Layer 3: Robust Scenario Planning & Forecasting (Simplified for MVP)
 
-- [ ] **Goal**: Allow users to explore financial impacts of future decisions.
-- [ ] **MVP Plan**:
-    - [ ] **Focused "What If" Scenarios (2 initial types)**:
-        - [ ] **New Debt/Loan Impact (e.g., Car Loan)**:
-            - [ ] **User Input**: Loan amount, interest rate, term (years).
-            - [ ] **Output**: Calculate and display estimated monthly payment. Show its impact on "monthly free cash flow" (income - essential expenses - current discretionary spend - new loan payment). "A $30,000 car loan at 6% over 5 years would add approx. $580/month to your expenses, reducing your monthly free cash by that amount."
-        - [ ] **Raise/Income Increase Impact**:
-            - [ ] **User Input**: New monthly take-home income increase.
-            - [ ] **Output**: Show the increase in "free cash flow." Suggest potential allocations based on best practices (e.g., "With an extra $X/month, you could put $Y towards savings goals and $Z towards debt repayment.").
-    - [ ] **Basic Future Cash Flow Visualization**: A simple line graph projecting estimated income vs. planned expenses (including new scenario impacts) over the next 3-6 months.
+- [x] **Goal**: Allow users to explore financial impacts of future decisions.
+- [x] **MVP Plan**:
+    - [x] **Focused "What If" Scenarios (2 initial types)**:
+        - [x] **New Debt/Loan Impact (e.g., Car Loan)**:
+            - [x] **User Input**: Loan amount, interest rate, term (years).
+            - [x] **Output**: Calculate and display estimated monthly payment. Show its impact on "monthly free cash flow" (income - essential expenses - current discretionary spend - new loan payment). "A $30,000 car loan at 6% over 5 years would add approx. $580/month to your expenses, reducing your monthly free cash by that amount."
+        - [x] **Raise/Income Increase Impact**:
+            - [x] **User Input**: New monthly take-home income increase.
+            - [x] **Output**: Show the increase in "free cash flow." Suggest potential allocations based on best practices (e.g., "With an extra $X/month, you could put $Y towards savings goals and $Z towards debt repayment.").
+    - [x] **Basic Future Cash Flow Visualization**: A simple line graph projecting estimated income vs. planned expenses (including new scenario impacts) over the next 3-6 months.
 
 #### Layer 4: Enhanced Integration with Financial Goals
 
-- [ ] **Goal**: Make goal tracking more dynamic and connected to daily spending.
-- [ ] **MVP Plan**:
-    - [ ] **Goal Definition**: Users can create custom savings goals with a name, target amount, and target date.
-    - [ ] **Manual Goal Contributions**: Allow users to manually designate money from their checking account as a contribution to a specific goal.
-    - [ ] **Real-time Spending Impact on Goals**:
-        - [ ] **Mechanism**: If the app detects a reduction in discretionary spending based on historical patterns, or if a user specifically reduces a budget category, link this to goal progress.
-        - [ ] **Nudge**: "Great work cutting down on impulse buys! That extra $20 this week brings you closer to your [Goal Name] goal!" (Connects directly to behavioral nudging).
+- [x] **Goal**: Make goal tracking more dynamic and connected to daily spending.
+- [x] **MVP Plan**:
+    - [x] **Goal Definition**: Users can create custom savings goals with a name, target amount, and target date.
+    - [x] **Manual Goal Contributions**: Allow users to manually designate money from their checking account as a contribution to a specific goal.
+    - [x] **Real-time Spending Impact on Goals**:
+        - [x] **Mechanism**: If the app detects a reduction in discretionary spending based on historical patterns, or if a user specifically reduces a budget category, link this to goal progress.
+        - [x] **Nudge**: "Great work cutting down on impulse buys! That extra $20 this week brings you closer to your [Goal Name] goal!" (Connects directly to behavioral nudging).
 
-#### Layer 5: "Scratch Pad" or Flexible Planning Space
+#### Layer 5: "Scratch Pad" or Flexible Planning Space - ENHANCED ✅
 
-- [ ] **Goal**: Provide a less formal, low-friction area for ad-hoc financial thoughts.
-- [ ] **MVP Plan**:
-    - [ ] **Free-Form Notes Section**: A dedicated area for users to jot down any financial notes, thoughts, or upcoming expenses not yet tied to a formal budget (e.g., "Estimate $500 for car service next month," "Need new tires soon").
-    - [ ] **Temporary Budget Adjustments**: Allow users to temporarily "pause" or "reduce" a specific budget category for a defined period (e.g., "Reducing dining out by $100 for the next 2 weeks to save for concert tickets"). This doesn't permanently change the core budget but provides flexibility.
+- [x] **Goal**: Provide a less formal, low-friction area for ad-hoc financial thoughts.
+- [x] **MVP Plan**:
+    - [x] **Free-Form Notes Section**: A dedicated area for users to jot down any financial notes, thoughts, or upcoming expenses not yet tied to a formal budget (e.g., "Estimate $500 for car service next month," "Need new tires soon").
+    - [x] **Temporary Budget Adjustments**: Allow users to temporarily "pause" or "reduce" a specific budget category for a defined period (e.g., "Reducing dining out by $100 for the next 2 weeks to save for concert tickets"). This doesn't permanently change the core budget but provides flexibility.
+- [x] **Enhanced Features**:
+    - [x] **Auto-Save Functionality**: Notes automatically save every 30 seconds with last-saved timestamp tracking
+    - [x] **Note Templates**: Quick-start templates for Monthly Planning, Goal Setting, and Expense Tracking
+    - [x] **Smart Suggestions**: Intelligent budget adjustment recommendations based on user behavior
+    - [x] **Persistent Storage**: All notes and adjustments persist using AsyncStorage
+    - [x] **Active/Expired Tracking**: Budget adjustments automatically expire and are visually separated
+    - [x] **Category Suggestions**: Quick-select buttons for common spending categories
+    - [x] **Duration Suggestions**: Predefined time periods for budget adjustments
+    - [x] **Input Validation**: Comprehensive validation with user-friendly error messages
+    - [x] **Visual Status Indicators**: Real-time feedback for save states and adjustment status
 
-#### Layer 6: More Advanced Debt Management Strategies (Initial)
+#### Layer 6: More Advanced Debt Management Strategies - COMPLETE ✅
 
-- [ ] **Goal**: Provide actionable strategies beyond just tracking balances.
-- [ ] **MVP Plan**:
-    - [ ] **Debt Overview**: Pull in all linked debt accounts (credit cards, loans) showing current balance, interest rate, and minimum payment.
-    - [ ] **"What If I Pay More?" Calculator**: An interactive slider/input to show the impact of an increased payment on estimated payoff date and total interest saved.
-    - [ ] **Simple Avalanche/Snowball Modeler**:
-        - [ ] **Mechanism**: Allow the user to select either "Debt Snowball" (pay lowest balance first) or "Debt Avalanche" (pay highest interest first) strategy.
-        - [ ] **Visualization**: Show a projected timeline for debt payoff based on current payments + any extra payments, and how this changes under the chosen strategy. This won't automatically execute payments, but models the impact.
+- [x] **Goal**: Provide actionable strategies beyond just tracking balances.
+- [x] **MVP Plan**:
+    - [x] **Debt Overview**: Pull in all linked debt accounts (credit cards, loans) showing current balance, interest rate, and minimum payment.
+    - [x] **"What If I Pay More?" Calculator**: An interactive slider/input to show the impact of an increased payment on estimated payoff date and total interest saved.
+    - [x] **Simple Avalanche/Snowball Modeler**:
+        - [x] **Mechanism**: Allow the user to select either "Debt Snowball" (pay lowest balance first) or "Debt Avalanche" (pay highest interest first) strategy.
+        - [x] **Visualization**: Show a projected timeline for debt payoff based on current payments + any extra payments, and how this changes under the chosen strategy. This won't automatically execute payments, but models the impact.
+- [x] **Advanced Features**:
+    - [x] **Strategy Comparison**: Side-by-side comparison of Current, Snowball, and Avalanche approaches
+    - [x] **Intelligent Recommendations**: AI-powered suggestions based on interest savings vs psychological benefits
+    - [x] **Interactive Timeline**: Step-by-step payoff sequence with payment amounts and dates
+    - [x] **Total Interest Calculations**: Comprehensive interest savings analysis across all strategies
+    - [x] **Payment Sequencing**: Automatic calculation of payment acceleration as debts are eliminated
+    - [x] **Visual Strategy Selection**: Intuitive cards showing payoff time and interest for each approach
 
 ### MVP Technical Stack (Recommended)
 

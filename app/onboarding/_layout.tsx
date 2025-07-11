@@ -8,6 +8,7 @@ export default function OnboardingLayout() {
         gestureEnabled: false,
       }}>
       <Stack.Screen name="welcome" />
+      <Stack.Screen name="auth" />
       <Stack.Screen name="bank-linking" />
     </Stack>
   );
