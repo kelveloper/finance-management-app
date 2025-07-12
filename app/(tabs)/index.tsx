@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
     color: '#F9FAFB', // White text for greeting
   },
   greetingName: {
-    fontSize: 40,
+    fontSize: 44,
     fontWeight: 'bold',
     color: '#34D399', // Green for name and exclamation
   },
