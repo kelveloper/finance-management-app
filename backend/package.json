@@ -4,11 +4,15 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon src/index.ts",
+    "dev": "NODE_ENV=development nodemon src/index.ts",
+    "dev:staging": "NODE_ENV=staging nodemon src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "start:staging": "NODE_ENV=staging node dist/index.js",
+    "start:production": "NODE_ENV=production node dist/index.js",
     "test": "jest",
-    "sync": "ts-node src/sync-chase-csv.ts"
+    "sync": "NODE_ENV=development ts-node src/sync-chase-csv.ts",
+    "sync:staging": "NODE_ENV=staging ts-node src/sync-chase-csv.ts"
   },
   "keywords": [],
   "author": "",

@@ -40,3 +40,5 @@ env/
 # Cursor
 .cursor/
 curos/
+# Backend Environment Files
+backend/.env*
