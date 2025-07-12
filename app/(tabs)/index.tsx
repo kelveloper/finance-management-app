@@ -562,11 +562,12 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   greetingText: {
-    fontSize: 20,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#F9FAFB',
-    textAlign: 'center',
+    color: '#34D399', // Bright green color to stand out
+    textAlign: 'left',
     marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 20,
+    paddingLeft: 8,
   },
 });
