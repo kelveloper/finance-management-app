@@ -641,13 +641,24 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                 
                 // Automatically categorize the newly uploaded transactions
                 console.log('Running automatic categorization after CSV upload...');
-                await categorizeTransactions();
+                const categorizationResults = await categorizeTransactions();
                 
                 // Use a simple timestamp as the access token for the session
                 const accessToken = new Date().getTime().toString();
+                
+                // Build detailed categorization message
+                const categoryBreakdown = Object.entries(categorizationResults.categorized)
+                    .map(([category, count]) => `${count} ${category}`)
+                    .join(', ');
+                
+                const message = categorizationResults.total > 0 
+                    ? `${transactions.length} transactions uploaded and automatically categorized! ${categoryBreakdown}${categorizationResults.uncategorized > 0 ? `, ${categorizationResults.uncategorized} General` : ''}.`
+                    : `${transactions.length} transactions uploaded successfully.`;
+                
                 res.status(200).json({ 
-                    message: `${transactions.length} transactions uploaded and categorized successfully.`,
+                    message,
                     accessToken: accessToken,
+                    categorization: categorizationResults
                 });
 
             } catch (error: any) {

@@ -23,9 +23,12 @@ const showAlert = (title: string, message: string, buttons?: Array<{text: string
 export default function BankLinkingScreen() {
   const { setAccessToken, userId } = useSession();
   const [isCsvUploading, setIsCsvUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
 
   const handleCsvUpload = async () => {
     setIsCsvUploading(true);
+    setUploadStatus('Selecting file...');
+    
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'text/csv',
@@ -33,6 +36,8 @@ export default function BankLinkingScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
+        setUploadStatus('Uploading transactions...');
+        
         const formData = new FormData();
         
         // For native, the file object is what's needed. For web, it's the file itself.
@@ -44,6 +49,8 @@ export default function BankLinkingScreen() {
         
         formData.append('file', fileData);
 
+        setUploadStatus('Processing and categorizing...');
+        
         const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/upload-csv`, {
           method: 'POST',
           body: formData,
@@ -57,7 +64,14 @@ export default function BankLinkingScreen() {
         const data = await response.json();
 
         if (response.ok && data.accessToken) {
-          showAlert('Success', 'Transaction data uploaded successfully!');
+          setUploadStatus('Complete!');
+          
+          // Show detailed categorization results
+          const message = data.categorization ? 
+            `Upload Complete!\n\n${data.message}\n\nYour transactions have been automatically organized into categories to help you understand your spending patterns.` :
+            'Transaction data uploaded successfully!';
+          
+          showAlert('Success', message);
           await setAccessToken(data.accessToken);
         } else {
           // Handle specific error cases
@@ -74,9 +88,11 @@ export default function BankLinkingScreen() {
       }
     } catch (error: any) {
       console.error('CSV Upload Error:', error);
+      setUploadStatus('Error occurred');
       showAlert('Error', error.message || 'An unexpected error occurred during CSV upload.');
     } finally {
       setIsCsvUploading(false);
+      setTimeout(() => setUploadStatus(''), 1000); // Clear status after a second
     }
   };
 
@@ -104,7 +120,10 @@ export default function BankLinkingScreen() {
           disabled={isCsvUploading}
         >
           {isCsvUploading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <>
+              <ActivityIndicator color="#FFFFFF" />
+              {uploadStatus && <Text style={styles.statusText}>{uploadStatus}</Text>}
+            </>
           ) : (
             <>
               <UploadCloud size={20} color="#FFFFFF" style={styles.buttonIcon} />
@@ -228,5 +247,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#94A3B8',
     marginBottom: 4,
+  },
+  statusText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

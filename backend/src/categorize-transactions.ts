@@ -34,7 +34,11 @@ const getCategoryFromDescription = (description: string): string => {
   return 'General'; // Default category if no rule matches
 };
 
-export const categorizeTransactions = async () => {
+export const categorizeTransactions = async (): Promise<{
+  total: number;
+  categorized: Record<string, number>;
+  uncategorized: number;
+}> => {
   console.log('Fetching uncategorized transactions from Supabase...');
 
   const { data: transactions, error } = await supabase
@@ -44,18 +48,30 @@ export const categorizeTransactions = async () => {
 
   if (error) {
     console.error('Error fetching transactions:', error);
-    return;
+    throw error;
   }
 
   if (!transactions || transactions.length === 0) {
     console.log('No transactions to categorize.');
-    return;
+    return { total: 0, categorized: {}, uncategorized: 0 };
   }
 
   console.log(`Found ${transactions.length} transactions to categorize.`);
 
+  // Track categorization results
+  const categoryStats: Record<string, number> = {};
+  let generalCount = 0;
+
   const updates = transactions.map(t => {
     const category = getCategoryFromDescription(t.description);
+    
+    // Track stats
+    if (category === 'General') {
+      generalCount++;
+    } else {
+      categoryStats[category] = (categoryStats[category] || 0) + 1;
+    }
+
     console.log(`  - ID ${t.id}: ${t.description.substring(0, 40)}... -> ${category}`);
     return supabase
       .from('transactions')
@@ -67,6 +83,12 @@ export const categorizeTransactions = async () => {
   await Promise.all(updates);
 
   console.log('Rule-based categorization complete!');
+  
+  return {
+    total: transactions.length,
+    categorized: categoryStats,
+    uncategorized: generalCount
+  };
 };
 
 // Run categorization when this file is executed directly
