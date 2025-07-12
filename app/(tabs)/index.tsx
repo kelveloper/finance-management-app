@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, Platform, Alert, ScrollView, TextInput } from 'react-native';
+import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, Platform, Alert, ScrollView, TextInput, Modal } from 'react-native';
 import React, { useState, useMemo } from 'react';
 import moment from 'moment';
 import { useQuery } from '@tanstack/react-query';
@@ -205,9 +205,21 @@ const ModernTransactionCard = ({
           <Text style={styles.modernTransactionName} numberOfLines={1}>
             {transaction.description}
           </Text>
-          <Text style={styles.modernTransactionCategory}>
-            {transaction.category || 'General'}
-          </Text>
+          <TouchableOpacity 
+            style={styles.categoryButton}
+            onPress={() => onUpdateCategory(transaction)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.modernTransactionCategory}>
+              {transaction.category || 'General'}
+            </Text>
+            {transaction.subcategory && (
+              <Text style={styles.modernTransactionSubcategory}>
+                {' > '}{transaction.subcategory}
+              </Text>
+            )}
+            <Text style={styles.categoryEditIcon}>✎</Text>
+          </TouchableOpacity>
           <Text style={styles.modernTransactionDate}>
             {moment(transaction.posted_date, 'YYYY-MM-DD').format('MMM D, YYYY')}
           </Text>
@@ -225,28 +237,24 @@ const ModernTransactionCard = ({
         )}
         <View style={styles.modernActionButtons}>
           <TouchableOpacity
-            style={styles.modernEditButton}
-            onPress={() => onUpdateCategory(transaction)}
-          >
-            <Text style={styles.modernEditButtonText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
             style={[styles.modernTagButton, styles.modernEssentialButton]}
             onPress={() => onUpdateTag(transaction.id, 'essential')}
           >
-            <Text style={styles.modernTagButtonText}>E</Text>
+            <Text style={styles.modernTagButtonText}>Essential</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modernTagButton, styles.modernDiscretionaryButton]}
             onPress={() => onUpdateTag(transaction.id, 'discretionary')}
           >
-            <Text style={styles.modernTagButtonText}>D</Text>
+            <Text style={styles.modernTagButtonText}>Optional</Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
   );
 };
+
+
 
 export default function HomeScreen() {
   const { userId, firstName } = useSession();
@@ -786,7 +794,34 @@ const styles = StyleSheet.create({
   modernTransactionCategory: {
     fontSize: 13,
     color: '#34D399',
+    fontWeight: '600',
+  },
+  modernTransactionSubcategory: {
+    fontSize: 12,
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 2,
+  },
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginBottom: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+  },
+  categoryEditIcon: {
+    fontSize: 12,
+    color: '#34D399',
+    marginLeft: 4,
+    opacity: 0.7,
   },
   modernTransactionDate: {
     fontSize: 12,

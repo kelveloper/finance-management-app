@@ -42,3 +42,6 @@ env/
 curos/
 # Backend Environment Files
 backend/.env*
+
+# Development notes (private debugging scratchpad)
+docs/lesson_learned.md

@@ -185,14 +185,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 10,
     textAlign: 'center',
   },
   description: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#94A3B8',
     textAlign: 'center',
     marginBottom: 30,
@@ -230,11 +230,11 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
   },
   footerText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#64748B',
     marginTop: 24,
     textAlign: 'center',
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginHorizontal: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#64748B',
     fontSize: 14,
   },
@@ -267,20 +267,20 @@ const styles = StyleSheet.create({
   },
   supportedFormatsTitle: {
     fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#10B981',
     marginBottom: 8,
   },
   supportedFormatsText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#94A3B8',
     marginBottom: 4,
   },
   statusText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     marginTop: 8,
     textAlign: 'center',
   },
@@ -309,14 +309,14 @@ const styles = StyleSheet.create({
   progressText: {
     color: '#94A3B8',
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     textAlign: 'center',
     marginBottom: 4,
   },
   progressPercentage: {
     color: '#10B981',
     fontSize: 16,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     textAlign: 'center',
   },
 });

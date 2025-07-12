@@ -52,12 +52,14 @@ The MVP will focus on establishing a robust data foundation and delivering Smart
     - [x] **UI**: A clear, scrollable list of all transactions fetched from Plaid, displayed on the main dashboard.
     - [x] **Data Displayed**: Each list item should show Merchant Name, Amount, Date, and the initial Category provided by Plaid.
     - [x] **Mechanism**: The frontend will fetch this data from the existing `/api/data` endpoint upon loading the dashboard.
-- [x] **"Why Did I Spend That?" Analysis (AI 1.0 - Anomaly Detection)**:
+- [x] **"Why Did I Spend That?" Analysis (AI 2.0 - Enhanced with Learning)**:
     - [x] **Insight**: "You've spent $X on [Category] this week, which is [Y%] higher than your 4-week average."
-    - [x] **Mechanism (Backend)**: Create a new backend service that, for a given user and category, calculates the average weekly spend over the last 4 weeks and compares it to the current week's spending.
-- [x] **Personalized, Actionable Advice (Rule-Based & Template-Driven)**:
-    - [x] **Mechanism**: Simple, rule-based advice triggered by the anomaly detection.
-    - [x] **Example**: If the "Dining Out" category anomaly is detected, display a card with advice like: "Trending high on Dining Out? Challenge yourself to pack lunch twice this week."
+    - [x] **Mechanism (Backend)**: Advanced AI system that learns from user behavior and provides personalized insights
+    - [x] **Enhanced Features**: Essential vs discretionary analysis, subcategory-level insights, motivation understanding
+- [x] **Personalized, Actionable Advice (AI-Driven & Learning-Based)**:
+    - [x] **Mechanism**: Intelligent advice system that adapts based on user acceptance patterns and spending motivations
+    - [x] **Example**: AI learns that user prefers convenience-based spending and provides tailored advice accordingly
+    - [x] **Learning Integration**: Advice gets better over time as AI understands user's financial personality
 - [x] **Proactive Alerts and Predictions (Foundation)**:
     - [x] **Upcoming Recurring Bills**:
         - [x] **Mechanism (Backend)**: Implement a service to scan transaction history for recurring payments (e.g., same merchant, similar amount, regular interval).
@@ -119,6 +121,95 @@ The MVP will focus on establishing a robust data foundation and delivering Smart
     - [x] **Total Interest Calculations**: Comprehensive interest savings analysis across all strategies
     - [x] **Payment Sequencing**: Automatic calculation of payment acceleration as debts are eliminated
     - [x] **Visual Strategy Selection**: Intuitive cards showing payoff time and interest for each approach
+
+#### Layer 7: Intelligent AI Learning System - COMPLETE ✅
+
+- [x] **Goal**: Create an AI system that learns from user behavior and gets better at understanding individual financial patterns and motivations over time.
+- [x] **Core Philosophy**: "The AI should understand your 'why' behind financial decisions, not just track what you spend."
+
+##### 7.1 Behavioral Pattern Recognition & Learning
+
+- [x] **User Behavior Analysis**:
+    - [x] **Spending Velocity Tracking**: Monitors transaction frequency patterns (transactions per day/week)
+    - [x] **Temporal Pattern Recognition**: Identifies most active spending days and hours
+    - [x] **Category Preference Learning**: Discovers user's top spending categories automatically
+    - [x] **Financial Discipline Scoring**: Calculates impulse spending score and budget adherence metrics
+    - [x] **Decision Pattern Tracking**: Monitors how often users accept/dismiss AI suggestions
+
+- [x] **Motivation Understanding System**:
+    - [x] **Spending Motivation Categories**: Classifies purchases as necessity, convenience, pleasure, social, or investment
+    - [x] **Reasoning Capture**: Optional user explanations for category corrections ("I needed this for work")
+    - [x] **Context Learning**: AI remembers explanations and builds patterns around decision-making
+    - [x] **Motivation-Driven Insights**: Provides different advice based on spending motivations
+
+##### 7.2 Adaptive Learning from User Corrections
+
+- [x] **Category Correction Intelligence**:
+    - [x] **Merchant-Category Mapping**: Learns personalized rules from every user correction
+    - [x] **Subcategory Learning**: Remembers preferred subcategories for specific merchants
+    - [x] **Pattern Recognition**: Identifies when "Starbucks" should be "Coffee & Tea" vs "Fast Food"
+    - [x] **Reasoning Integration**: Incorporates user explanations to improve future categorization
+
+- [x] **Confidence Adaptation**:
+    - [x] **Historical Success Tracking**: Monitors accuracy of past AI suggestions
+    - [x] **Dynamic Confidence Scoring**: Adjusts confidence based on user acceptance rates
+    - [x] **Personalized Suggestion Filtering**: Only shows insights above user's acceptance threshold
+
+##### 7.3 Progressive Intelligence Features
+
+- [x] **Learning Timeline**:
+    - [x] **Week 1**: Basic categorization, generic advice
+    - [x] **Week 4**: Understands spending timing, preferred merchants
+    - [x] **Month 2**: Recognizes motivations, provides personalized insights
+    - [x] **Month 6**: Highly accurate predictions, deeply personalized advice
+    - [x] **Year 1**: Anticipates needs, seasonal pattern recognition
+
+- [x] **Behavior-Based Insights**:
+    - [x] **Temporal Insights**: "You spend most on Fridays - consider reviewing your budget on Thursdays"
+    - [x] **Motivation Patterns**: "Your spending is primarily driven by convenience - allocate budget for time-saving purchases"
+    - [x] **Discipline Feedback**: Positive reinforcement for good financial habits
+    - [x] **Predictive Alerts**: Warns about unusual spending patterns before they become problems
+
+##### 7.4 Enhanced AI Data Types & Storage
+
+- [x] **User Behavior Pattern Schema**:
+    - [x] **Spending Velocity**: Transaction frequency metrics
+    - [x] **Preferred Categories**: Top spending categories ranked by frequency
+    - [x] **Timing Patterns**: Most active days/hours for spending
+    - [x] **Decision Patterns**: AI suggestion acceptance rates and category change frequency
+    - [x] **Financial Discipline**: Budget adherence, impulse scores, planning consistency
+
+- [x] **AI Learning Data Schema**:
+    - [x] **User Corrections**: Original vs corrected categories with reasoning
+    - [x] **Suggestion Feedback**: Tracks accepted/dismissed/modified AI recommendations
+    - [x] **Spending Motivations**: Categorized motivations with user context
+
+##### 7.5 API Enhancements for Learning
+
+- [x] **Enhanced Feedback Endpoint** (`/api/categorize/feedback`):
+    - [x] **Reasoning Capture**: Accepts optional user explanations for corrections
+    - [x] **Learning Integration**: Feeds corrections directly into AI learning system
+    - [x] **Motivation Analysis**: Infers spending motivations from user reasoning
+    - [x] **Statistics Reporting**: Returns learning progress metrics
+
+- [x] **New Learning Endpoints**:
+    - [x] **Suggestion Feedback** (`/api/ai/suggestion-feedback`): Tracks user responses to AI advice
+    - [x] **Learning Statistics** (`/api/ai/learning-stats`): Provides debugging/improvement metrics
+    - [x] **Behavioral Insights**: Generates personalized insights based on learned patterns
+
+##### 7.6 Personalization Benefits
+
+- [x] **Individual Financial Personality Recognition**:
+    - [x] **Spending Patterns**: Learns when, where, and how user typically spends
+    - [x] **Decision Making**: Understands user's financial decision-making style
+    - [x] **Risk Tolerance**: Infers conservative vs aggressive financial behavior
+    - [x] **Goal Alignment**: Matches advice to user's demonstrated priorities
+
+- [x] **Adaptive Advice System**:
+    - [x] **Context-Aware Recommendations**: Different advice for essential vs discretionary spending
+    - [x] **Motivation-Specific Guidance**: Tailored advice based on spending motivations
+    - [x] **Confidence-Weighted Suggestions**: Only shows advice user is likely to accept
+    - [x] **Progressive Complexity**: Advice gets more sophisticated as AI learns more
 
 ### MVP Technical Stack (Recommended)
 

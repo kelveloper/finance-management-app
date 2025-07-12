@@ -42,14 +42,12 @@ const SessionGate = ({ children }: { children: React.ReactNode }) => {
       }
       // Note: In staging, we let users proceed through the normal flow after reaching welcome
     } 
-    // DEVELOPMENT: Original logic
+    // DEVELOPMENT: Route directly to transaction page for development work
     else {
-      if (accessToken && inOnboardingGroup) {
-        envLog('Development: Redirecting to main app (user authenticated)');
+      // Force redirect to transaction page in development mode for feature work
+      if (!inOnboardingGroup) {
+        envLog('Development: Forcing redirect to transaction page for development');
         router.replace('/(tabs)');
-      } else if (!accessToken && !inOnboardingGroup) {
-        envLog('Development: Redirecting to welcome screen (user not authenticated)');
-        router.replace('/onboarding/welcome');
       }
     }
   }, [accessToken, isLoading, segments, router]);

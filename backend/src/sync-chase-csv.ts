@@ -49,14 +49,11 @@ export const runSync = async (transactionsToProcess?: any[]): Promise<number> =>
         }
 
         transactions.push({
-          details: row.Details,
-          posted_date: postedDate.format('YYYY-MM-DD'),
-          description: row.Description,
+          user_id: 'dev_user_2025',
           amount: amount,
-          type: row.Type,
-          balance: row.Balance ? parseFloat(row.Balance) : null,
-          user_id: 'mock_user_id',
-          category: 'Uncategorized'
+          description: row.Description,
+          category: 'Uncategorized',
+          posted_date: postedDate.format('YYYY-MM-DD')
         });
       })
       .on('end', async () => {
@@ -83,7 +80,7 @@ const processTransactions = async (transactions: any[]) => {
       const { error: deleteError } = await supabase
         .from('transactions')
         .delete()
-        .eq('user_id', 'mock_user_id');
+        .eq('user_id', 'dev_user_2025');
 
       if (deleteError) {
         console.error(`Failed to clear old transactions, proceeding anyway. Error: ${deleteError.message}`);
@@ -91,10 +88,16 @@ const processTransactions = async (transactions: any[]) => {
         console.log('Old transactions cleared successfully.');
       }
 
+      // Add unique IDs to transactions
+      const transactionsWithIds = transactions.map((transaction, index) => ({
+        ...transaction,
+        id: Date.now() + index
+      }));
+
       console.log('Uploading new transactions to Supabase...');
       const { error: insertError } = await supabase
         .from('transactions')
-        .insert(transactions);
+        .insert(transactionsWithIds);
 
       if (insertError) {
         throw new Error(`Failed to upload transactions: ${insertError.message}`);
