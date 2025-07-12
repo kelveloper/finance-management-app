@@ -61,7 +61,6 @@ export default function HomeScreen() {
   });
 
   const transactions = data?.transactions ?? [];
-  const insights = data?.insights?.anomalies ?? [];
   const recurring = data?.insights?.recurring ?? [];
   const personalizedInsights = data?.insights?.personalized ?? [];
   const smartGoals = data?.insights?.smartGoals ?? [];
@@ -233,20 +232,7 @@ export default function HomeScreen() {
       ListHeaderComponent={() => (
         <>
           <Text style={styles.greetingText}>{getTimeBasedGreeting(firstName)}</Text>
-          {insights.length > 0 && (
-            <View style={styles.insightsContainer}>
-              <Text style={styles.insightsTitle}>AI Insights</Text>
-              {insights.map((insight) => (
-                <View key={insight.category} style={styles.insightCard}>
-                  <Text style={styles.insightText}>{insight.insight}</Text>
-                  {insight.advice && (
-                      <Text style={styles.adviceText}>{insight.advice}</Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
-
+          
           {recurring.length > 0 && (
             <View style={styles.recurringContainer}>
                 <Text style={styles.insightsTitle}>Upcoming Bills</Text>
