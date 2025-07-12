@@ -189,6 +189,15 @@ app.post('/api/auth/login', (async (req: Request, res: Response) => {
 
         if (transactionError) throw transactionError;
 
+        // Check if user has completed personalization
+        const { data: userProfile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('id', user.id)
+            .limit(1);
+
+        if (profileError) throw profileError;
+
         // Generate token
         const token = generateToken(user.id);
 
@@ -201,7 +210,8 @@ app.post('/api/auth/login', (async (req: Request, res: Response) => {
                 firstName: user.first_name,
                 lastName: user.last_name
             },
-            hasData: transactions && transactions.length > 0
+            hasData: transactions && transactions.length > 0,
+            hasCompletedPersonalization: userProfile && userProfile.length > 0
         });
 
     } catch (error: any) {
@@ -210,23 +220,113 @@ app.post('/api/auth/login', (async (req: Request, res: Response) => {
     }
 }) as express.RequestHandler);
 
-// Middleware to verify JWT tokens (simplified for now)
-// const authenticateToken = (req: any, res: Response, next: express.NextFunction) => {
-//     const authHeader = req.headers['authorization'];
-//     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+// Middleware to verify JWT tokens
+const authenticateToken: express.RequestHandler = (req: any, res: Response, next: express.NextFunction): void => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-//     if (!token) {
-//         return res.status(401).json({ error: 'Access token required' });
-//     }
+    if (!token) {
+        res.status(401).json({ error: 'Access token required' });
+        return;
+    }
 
-//     jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
-//         if (err) {
-//             return res.status(403).json({ error: 'Invalid or expired token' });
-//         }
-//         req.userId = decoded.userId;
-//         next();
-//     });
-// };
+    jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
+        if (err) {
+            res.status(403).json({ error: 'Invalid or expired token' });
+            return;
+        }
+        req.userId = decoded.userId;
+        next();
+    });
+};
+
+// User Personalization  
+app.post('/api/user/personalization', authenticateToken, (async (req: Request, res: Response) => {
+    const { userId, answers } = req.body;
+    const authenticatedUserId = (req as any).userId;
+
+    // Ensure user can only update their own profile
+    if (userId !== authenticatedUserId) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
+    }
+
+    if (!answers || typeof answers !== 'object') {
+        res.status(400).json({ error: 'Invalid answers data' });
+        return;
+    }
+
+    try {
+        console.log('Saving personalization for user:', userId, answers);
+
+        // Create user profile with personalization data
+        const profileData = {
+            id: userId,
+            preferences: {
+                risk_tolerance: 'moderate', // Default, can be updated later
+                financial_goals: answers.primary_goal ? [answers.primary_goal] : [],
+                spending_priorities: [],
+                notification_preferences: {
+                    anomaly_alerts: answers.coaching_style === 'proactive_alerts',
+                    goal_reminders: true,
+                    saving_suggestions: answers.coaching_style !== 'show_patterns',
+                }
+            },
+            financial_personality: {
+                spender_type: answers.financial_personality || 'balanced',
+                impulse_score: getImpulseScore(answers.financial_personality),
+                planning_horizon: getPlanningHorizon(answers.financial_personality),
+                coaching_style: answers.coaching_style || 'show_patterns'
+            },
+            learning_data: {
+                category_corrections: [],
+                ignored_suggestions: [],
+                approved_suggestions: [],
+                onboarding_answers: answers
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
+
+        const { data, error } = await supabase
+            .from('user_profiles')
+            .upsert(profileData)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({
+            message: 'Personalization saved successfully',
+            profile: data
+        });
+
+    } catch (error: any) {
+        console.error('Personalization error:', error);
+        res.status(500).json({ error: 'Failed to save personalization' });
+    }
+}) as express.RequestHandler);
+
+// Helper functions for personalization mapping
+function getImpulseScore(personality: string): number {
+    switch (personality) {
+        case 'planner': return 2;
+        case 'goal_focused': return 4;
+        case 'go_with_flow': return 7;
+        case 'stressed': return 6;
+        default: return 5;
+    }
+}
+
+function getPlanningHorizon(personality: string): 'short' | 'medium' | 'long' {
+    switch (personality) {
+        case 'planner': return 'long';
+        case 'goal_focused': return 'medium';
+        case 'go_with_flow': return 'short';
+        case 'stressed': return 'short';
+        default: return 'medium';
+    }
+}
 
 // Fetches all relevant financial data for the user dashboard.
 app.get('/api/data', (async (req: Request, res: Response) => {
@@ -312,7 +412,8 @@ app.patch('/api/transactions/:transactionId', (async (req: Request, res: Respons
     const userId = req.headers['x-user-id'] as string || 'mock_user_123';
 
     if (!category) {
-        return res.status(400).json({ error: 'Category is required.' });
+        res.status(400).json({ error: 'Category is required.' });
+        return;
     }
 
     try {
@@ -337,7 +438,8 @@ app.patch('/api/transactions/:transactionId/tag', (async (req: Request, res: Res
     const userId = req.headers['x-user-id'] as string || 'mock_user_123';
 
     if (!tag || !['essential', 'discretionary'].includes(tag)) {
-        return res.status(400).json({ error: 'A valid tag ("essential" or "discretionary") is required.' });
+        res.status(400).json({ error: 'A valid tag ("essential" or "discretionary") is required.' });
+        return;
     }
 
     try {
@@ -362,7 +464,8 @@ app.post('/api/rules/apply', (async (req: Request, res: Response) => {
     const userId = 'mock_user_123';
 
     if (!keyword || !category) {
-        return res.status(400).json({ error: 'Keyword and category are required.' });
+        res.status(400).json({ error: 'Keyword and category are required.' });
+        return;
     }
 
     try {
@@ -444,7 +547,8 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
     const userId = req.headers['x-user-id'] as string || 'mock_user_123'; 
 
     if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded.' });
+        res.status(400).json({ error: 'No file uploaded.' });
+        return;
     }
 
     const transactions: any[] = [];
@@ -453,27 +557,71 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
     readable.push(req.file.buffer);
     readable.push(null);
 
-    readable
-        .pipe(csv({ skipLines: 1, mapHeaders: ({ header }) => header.trim() }))
-        .on('data', (row: ChaseCsvRow) => {
-            const amount = parseFloat(row.Amount);
-            const balance = row.Balance ? parseFloat(row.Balance) : undefined;
+    let rowCount = 0;
 
-            if (!isNaN(amount) && row['Posting Date']) {
-                transactions.push({
-                    user_id: userId,
-                    transaction_type: row.Details,
-                    posted_date: moment(row['Posting Date'], 'MM/DD/YYYY').format('YYYY-MM-DD'),
-                    description: row.Description.trim(),
-                    amount: amount,
-                    details: row.Type,
-                    balance: balance,
-                });
+    readable
+        .pipe(csv({ headers: false })) // Don't treat first row as headers
+        .on('data', (row: any) => {
+            rowCount++;
+            console.log(`Row ${rowCount}:`, row);
+
+            // Chase CSV format (without headers):
+            // Column 0: Details (DEBIT/CREDIT)
+            // Column 1: Posting Date
+            // Column 2: Description
+            // Column 3: Amount
+            // Column 4: Type (ACH_DEBIT, etc.)
+            // Column 5: Balance (optional)
+
+            if (Object.keys(row).length >= 4) {
+                const amountValue = row['3'];
+                const amount = parseFloat(amountValue);
+                const dateValue = row['1'];
+                const descriptionValue = row['2'];
+
+                if (!isNaN(amount) && dateValue && descriptionValue) {
+                    // Try multiple date formats
+                    let parsedDate;
+                    try {
+                        // Try MM/DD/YYYY format first
+                        parsedDate = moment(dateValue, 'MM/DD/YYYY').format('YYYY-MM-DD');
+                        if (!moment(parsedDate).isValid()) {
+                            // Try other common formats
+                            parsedDate = moment(dateValue, 'YYYY-MM-DD').format('YYYY-MM-DD');
+                            if (!moment(parsedDate).isValid()) {
+                                parsedDate = moment(dateValue, 'M/D/YYYY').format('YYYY-MM-DD');
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Date parsing error:', e);
+                        return; // Skip this row
+                    }
+                    
+                    // Generate unique transaction ID
+                    const transactionId = `${userId}_${Date.now()}_${transactions.length}`;
+                    
+                    transactions.push({
+                        id: transactionId,
+                        user_id: userId,
+                        account_id: 'chase-8793', // Default account ID for Chase uploads
+                        posted_date: parsedDate,
+                        description: descriptionValue.trim(),
+                        amount: amount,
+                        category: null, // Will be categorized later by AI
+                        tag: null, // Will be tagged later by AI
+                    });
+                }
             }
         })
         .on('end', async () => {
+            console.log(`Processed ${transactions.length} transactions from CSV (${rowCount} total rows)`);
+            
             if (transactions.length === 0) {
-                return res.status(400).json({ error: 'No valid transactions found in the CSV.' });
+                res.status(400).json({ 
+                    error: 'No valid transactions found in the CSV.',
+                    details: `Processed ${rowCount} rows. Expected Chase CSV format with columns: Details, Posting Date, Description, Amount, Type, Balance.`
+                });
+                return;
             }
 
             try {

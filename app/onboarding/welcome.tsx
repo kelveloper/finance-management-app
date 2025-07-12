@@ -4,13 +4,21 @@ import { router } from 'expo-router';
 import { Sparkles, Shield, TrendingUp } from 'lucide-react-native';
 import { useSession } from '@/hooks/useSession';
 import React, { useEffect, useState } from 'react';
-import { isDevelopment, getApiUrl, envLog, getEnvironmentDisplayName } from '@/utils/environment';
+import { isDevelopment, getApiUrl, envLog, getEnvironmentDisplayName, getCurrentEnvironment } from '@/utils/environment';
 
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const { setAccessToken } = useSession();
   const [isLoading, setIsLoading] = useState(true);
+
+  // Log environment information
+  useEffect(() => {
+    const env = getCurrentEnvironment();
+    const displayName = getEnvironmentDisplayName();
+    envLog('Welcome screen loaded');
+    envLog(`Current environment: ${env} (${displayName})`);
+  }, []);
 
   useEffect(() => {
     const handleWelcomeScreenLogic = async () => {

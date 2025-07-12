@@ -4,14 +4,35 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useSession } from '@/hooks/useSession';
+import { getApiUrl, envLog } from '@/utils/environment';
 
-const API_URL = 'http://127.0.0.1:8000';
+const API_URL = getApiUrl();
+
+// Web-compatible alert function
+const showAlert = (title: string, message: string, buttons?: Array<{text: string, onPress?: () => void, style?: string}>) => {
+  if (Platform.OS === 'web') {
+    // Use browser's native alert for web
+    const result = window.alert(`${title}\n\n${message}`);
+    // If there are buttons, call the first button's onPress
+    if (buttons && buttons[0] && buttons[0].onPress) {
+      buttons[0].onPress();
+    }
+  } else {
+    // Use React Native Alert for mobile
+    Alert.alert(title, message, buttons);
+  }
+};
 
 export default function AuthScreen() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(false); // Default to sign-up for first-time users
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { setAccessToken, setUserId } = useSession();
+
+  // Debug log to see environment and API URL
+  React.useEffect(() => {
+    envLog('Auth screen mounted, API URL:', API_URL);
+  }, []);
   
   const [formData, setFormData] = useState({
     email: '',
@@ -26,17 +47,29 @@ export default function AuthScreen() {
 
     // Basic validation
     if (!formData.email || !formData.password) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      showAlert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      showAlert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (!isLogin && (!formData.firstName || !formData.lastName)) {
+      showAlert('Error', 'Please fill in all required fields');
       return;
     }
 
     if (!isLogin && formData.password !== formData.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      showAlert('Error', 'Passwords do not match');
       return;
     }
 
     if (formData.password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      showAlert('Error', 'Password must be at least 6 characters');
       return;
     }
 
@@ -53,42 +86,84 @@ export default function AuthScreen() {
             lastName: formData.lastName
           };
 
+      envLog(`Attempting ${isLogin ? 'login' : 'registration'} with API URL: ${API_URL}${endpoint}`);
+      envLog('Request body:', body);
+
       const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
+      envLog('Response status:', response.status);
       const data = await response.json();
+      envLog('Response data:', data);
 
       if (response.ok) {
         await setAccessToken(data.accessToken);
         await setUserId(data.user.id);
         
-        Alert.alert(
-          'Success!', 
-          isLogin ? 'Welcome back!' : 'Account created successfully!',
+        // Redirect immediately without success alert for better UX
+        if (isLogin) {
+          // Check personalization and data status for existing user
+          if (!data.hasCompletedPersonalization) {
+            // User hasn't completed personalization - send them there first
+            router.replace('/onboarding/personalization');
+          } else if (!data.hasData) {
+            // User completed personalization but has no transaction data - send to bank linking
+            router.replace('/onboarding/bank-linking');
+          } else {
+            // User has both personalization and transaction data - send to dashboard
+            router.replace('/(tabs)');
+          }
+        } else {
+          // New user, go to personalization questionnaire first
+          router.push('/onboarding/personalization');
+        }
+      } else {
+        // Enhanced error handling - show the specific error message from backend
+        const errorMessage = data.error || data.message || 'Authentication failed';
+        envLog('Backend error:', errorMessage);
+        
+        showAlert(
+          'Error', 
+          errorMessage,
           [
             {
-              text: 'Continue',
+              text: 'OK',
               onPress: () => {
-                if (isLogin) {
-                  // Check if user has data, if yes go to dashboard, if no go to onboarding
-                  router.replace(data.hasData ? '/(tabs)' : '/onboarding/bank-linking');
-                } else {
-                  // New user, go to bank linking
-                  router.push('/onboarding/bank-linking');
+                // If user already exists, switch to login mode
+                if (errorMessage.toLowerCase().includes('user already exists') || 
+                    errorMessage.toLowerCase().includes('user exists')) {
+                  envLog('User exists - switching to login mode');
+                  setIsLogin(true);
                 }
               }
             }
           ]
         );
-      } else {
-        Alert.alert('Error', data.error || 'Authentication failed');
       }
     } catch (error) {
+      envLog('Auth error:', error);
       console.error('Auth error:', error);
-      Alert.alert('Error', 'Network error. Please try again.');
+      
+      // Better error handling for network issues
+      const errorMessage = error instanceof Error ? error.message : 'Network error. Please try again.';
+      
+      showAlert(
+        'Connection Error', 
+        `Unable to connect to the server. Please check your internet connection and try again.\n\nError: ${errorMessage}`,
+        [
+          {
+            text: 'Retry',
+            onPress: () => handleAuth()
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
     } finally {
       setLoading(false);
     }
@@ -141,7 +216,7 @@ export default function AuthScreen() {
                         placeholder="First Name"
                         placeholderTextColor="#64748B"
                         value={formData.firstName}
-                        onChangeText={(text) => setFormData({...formData, firstName: text})}
+                        onChangeText={(text) => setFormData({...formData, firstName: text || ''})}
                         autoCapitalize="words"
                       />
                     </View>
@@ -152,7 +227,7 @@ export default function AuthScreen() {
                         placeholder="Last Name"
                         placeholderTextColor="#64748B"
                         value={formData.lastName}
-                        onChangeText={(text) => setFormData({...formData, lastName: text})}
+                        onChangeText={(text) => setFormData({...formData, lastName: text || ''})}
                         autoCapitalize="words"
                       />
                     </View>
@@ -167,7 +242,7 @@ export default function AuthScreen() {
                   placeholder="Email Address"
                   placeholderTextColor="#64748B"
                   value={formData.email}
-                  onChangeText={(text) => setFormData({...formData, email: text.toLowerCase()})}
+                  onChangeText={(text) => setFormData({...formData, email: text?.toLowerCase() || ''})}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
@@ -181,7 +256,7 @@ export default function AuthScreen() {
                   placeholder="Password"
                   placeholderTextColor="#64748B"
                   value={formData.password}
-                  onChangeText={(text) => setFormData({...formData, password: text})}
+                  onChangeText={(text) => setFormData({...formData, password: text || ''})}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                 />
@@ -202,7 +277,7 @@ export default function AuthScreen() {
                     placeholder="Confirm Password"
                     placeholderTextColor="#64748B"
                     value={formData.confirmPassword}
-                    onChangeText={(text) => setFormData({...formData, confirmPassword: text})}
+                    onChangeText={(text) => setFormData({...formData, confirmPassword: text || ''})}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                   />

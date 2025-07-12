@@ -11,9 +11,10 @@ export type Environment = 'development' | 'staging' | 'production';
  * Determines the current environment based on various factors
  */
 export function getCurrentEnvironment(): Environment {
-  // Check if we're in Expo development mode
-  if (__DEV__) {
-    return 'development';
+  // Check for explicit environment variable first (highest priority)
+  const customEnv = getCustomEnvironment();
+  if (customEnv) {
+    return customEnv;
   }
 
   // Check for Expo release channel
@@ -27,10 +28,9 @@ export function getCurrentEnvironment(): Environment {
     }
   }
 
-  // Check for custom environment variables
-  const customEnv = getCustomEnvironment();
-  if (customEnv) {
-    return customEnv;
+  // Check if we're in Expo development mode (fallback)
+  if (__DEV__) {
+    return 'development';
   }
 
   // Default to development if we can't determine
@@ -131,7 +131,7 @@ export function getApiUrl(): string {
     case 'development':
       return 'http://127.0.0.1:8000';
     case 'staging':
-      return 'https://your-staging-api.com'; // Replace with your staging API URL
+      return 'http://127.0.0.1:8000'; // Local staging backend for now
     case 'production':
       return 'https://your-production-api.com'; // Replace with your production API URL
     default:

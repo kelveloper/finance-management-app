@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SessionProvider, useSession } from '@/hooks/useSession';
 import { isProductionLike, getEnvironmentDisplayName, envLog } from '@/utils/environment';
@@ -25,21 +25,32 @@ const SessionGate = ({ children }: { children: React.ReactNode }) => {
       inOnboardingGroup,
       isProductionEnvironment,
       currentSegments: segments,
-      environment: getEnvironmentDisplayName()
+      environment: getEnvironmentDisplayName(),
+      accessTokenValue: accessToken ? '[PRESENT]' : '[MISSING]'
     });
 
-    if (accessToken && inOnboardingGroup) {
-      // User has finished onboarding, redirect to the main app
-      envLog('Redirecting to main app (user authenticated)');
-      router.replace('/(tabs)');
-    } else if (!accessToken && !inOnboardingGroup) {
-      // User is not authenticated and not in the onboarding flow, send them there
-      envLog('Redirecting to welcome screen (user not authenticated)');
-      router.replace('/onboarding/welcome');
-    } else if (isProductionEnvironment && !inOnboardingGroup) {
-      // In staging/production, always show welcome first
-      envLog('Redirecting to welcome screen (production environment)');
-      router.replace('/onboarding/welcome');
+    // STAGING/PRODUCTION: Always start with welcome screen (ignore any existing sessions)
+    if (isProductionEnvironment) {
+      if (accessToken && inOnboardingGroup) {
+        // User has completed the flow and has an access token - redirect to main app
+        envLog('Staging: User authenticated, redirecting to main app');
+        router.replace('/(tabs)');
+      } else if (!inOnboardingGroup && !accessToken) {
+        // User is not in onboarding flow and not authenticated, send them to welcome
+        envLog('Staging: Redirecting to welcome screen (fresh start)');
+        router.replace('/onboarding/welcome');
+      }
+      // Note: In staging, we let users proceed through the normal flow after reaching welcome
+    } 
+    // DEVELOPMENT: Original logic
+    else {
+      if (accessToken && inOnboardingGroup) {
+        envLog('Development: Redirecting to main app (user authenticated)');
+        router.replace('/(tabs)');
+      } else if (!accessToken && !inOnboardingGroup) {
+        envLog('Development: Redirecting to welcome screen (user not authenticated)');
+        router.replace('/onboarding/welcome');
+      }
     }
   }, [accessToken, isLoading, segments, router]);
 

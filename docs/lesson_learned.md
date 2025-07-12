@@ -1037,4 +1037,254 @@ Finance apps need different user experiences in development vs production. Devel
 **Use Cases:**
 - Daily development: Fast testing without onboarding
 - Stakeholder demos: Professional user experience
-- Production releases: Consistent user onboarding 
+- Production releases: Consistent user onboarding
+
+---
+
+## 5. Personalized AI Questionnaire System Implementation
+
+**Date:** January 2025
+
+### The Enhancement: Pre-Upload Personalization for Better AI Insights
+
+Implemented a 3-question onboarding questionnaire that collects user preferences before data upload, enabling truly personalized AI coaching from day one.
+
+### What We Built
+
+#### 5.1 Interactive Questionnaire Flow
+- **Progressive UI**: Beautiful step-by-step interface with progress indicators
+- **3 Strategic Questions**: 
+  - Financial personality (Planner, Goal-focused, Go-with-flow, Money-anxious)
+  - Primary financial goal (Emergency fund, Major purchase, Wealth growth, etc.)
+  - AI coaching style preference (Proactive alerts, Show patterns, Smart suggestions, Goal-focused)
+- **Emoji-Enhanced Options**: Visual icons make choices more engaging and memorable
+
+#### 5.2 Technical Implementation
+
+**Frontend Components:**
+```
+app/onboarding/personalization.tsx - Interactive questionnaire screen
+- Question navigation with back/next buttons
+- Visual progress tracking (1 of 3, 2 of 3, etc.)
+- Option selection with visual feedback
+- Graceful error handling
+```
+
+**Backend API:**
+```
+POST /api/user/personalization - Secure endpoint with JWT authentication
+- Validates user can only update their own profile
+- Maps answers to personality scores and preferences
+- Stores in user_profiles table for AI personalization
+```
+
+#### 5.3 Updated User Flow
+**Before:** Auth → Bank Linking → Dashboard  
+**After:** Auth → **Personalization Questions** → Bank Linking → Dashboard
+
+#### 5.4 AI Personality Mapping
+- **Planner** → Low impulse score (2/10), Long planning horizon
+- **Goal-focused** → Medium impulse (4/10), Medium planning horizon  
+- **Go-with-flow** → High impulse (7/10), Short planning horizon
+- **Money-anxious** → Medium-high impulse (6/10), Short planning horizon
+
+### Strategic Benefits
+
+#### 5.5 Improved AI Insights
+- **Day-One Personalization**: AI can provide relevant insights immediately
+- **Coaching Style Matching**: Alerts vs. patterns vs. suggestions based on user preference
+- **Goal-Oriented Analysis**: Focus insights around user's primary objective
+- **Personality-Aware Advice**: Different advice for planners vs. go-with-flow users
+
+#### 5.6 Better User Engagement
+- **Sets Expectations**: Users understand the app will be personalized
+- **Reduces Friction**: Shows value before requiring data upload
+- **Foundation Building**: Prepares for post-upload validation questions
+
+### Technical Decisions & Lessons
+
+#### 5.7 UX Optimizations
+- **No Success Alerts**: Removed unnecessary confirmation popups for smoother flow
+- **Web-Compatible Alerts**: Created custom `showAlert()` function since React Native's `Alert.alert()` doesn't work on web
+- **Graceful Degradation**: Continues onboarding even if personalization API fails
+- **Progressive Enhancement**: Collects baseline data pre-upload, can validate/refine post-upload
+
+#### 5.8 Data Architecture
+- **Secure Storage**: JWT-protected endpoint ensures users can only update their own profile
+- **Structured Answers**: Stores raw answers in `learning_data.onboarding_answers` for future analysis
+- **Smart Defaults**: Maps personality types to actionable AI preferences automatically
+
+**Key Learning:** Pre-upload personalization strikes the perfect balance - gets valuable user context while they're motivated during onboarding, then can be refined with actual data analysis later.
+
+---
+
+## 6. Login Flow Fix: Proper Personalization Routing
+
+**Date:** January 2025
+
+### The Problem
+After implementing the personalization questionnaire, users reported that when they logged in, they were seeing the CSV upload screen instead of the personalization questions. The system was skipping the personalization step for existing users.
+
+### Root Cause Analysis
+The backend login endpoint was only checking for transaction data (`hasData`) but not whether the user had completed the personalization questionnaire. The frontend routing logic was therefore incomplete:
+
+```javascript
+// PROBLEMATIC LOGIC
+if (isLogin) {
+  router.replace(data.hasData ? '/(tabs)' : '/onboarding/bank-linking');
+}
+```
+
+This meant users who logged in but hadn't completed personalization were sent directly to bank linking, bypassing the questionnaire entirely.
+
+### Solution Implemented
+
+#### 6.1 Backend Enhancement
+Updated the login endpoint to check both transaction data AND personalization completion:
+
+```javascript
+// Check if user has completed personalization
+const { data: userProfile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('id', user.id)
+    .limit(1);
+
+// Return both pieces of information
+res.json({
+    hasData: transactions && transactions.length > 0,
+    hasCompletedPersonalization: userProfile && userProfile.length > 0
+});
+```
+
+#### 6.2 Frontend Routing Logic
+Updated the auth component to handle all possible user states:
+
+```javascript
+if (isLogin) {
+  if (!data.hasCompletedPersonalization) {
+    // User hasn't completed personalization - send them there first
+    router.replace('/onboarding/personalization');
+  } else if (!data.hasData) {
+    // User completed personalization but has no transaction data
+    router.replace('/onboarding/bank-linking');
+  } else {
+    // User has both personalization and transaction data
+    router.replace('/(tabs)');
+  }
+}
+```
+
+### Complete User Flow Matrix
+
+| User State | Personalization | Transaction Data | Route |
+|------------|-----------------|------------------|--------|
+| New User | ❌ | ❌ | `/onboarding/personalization` |
+| Returning User | ❌ | ❌ | `/onboarding/personalization` |
+| Returning User | ✅ | ❌ | `/onboarding/bank-linking` |
+| Returning User | ✅ | ✅ | `/(tabs)` |
+
+### Key Technical Insight
+When implementing multi-step onboarding flows, the backend must track completion of each step separately, not just the final state. Each step should be independently verifiable to ensure users can resume their journey at the correct point.
+
+### Testing Verification
+- New users properly routed to personalization
+- Existing users without personalization routed to personalization
+- Existing users with personalization but no data routed to bank linking
+- Existing users with both personalization and data routed to dashboard
+
+**Key Learning:** Always consider the complete user journey state machine when implementing progressive onboarding. Track each milestone independently to enable proper resumption from any point in the flow. 
+
+---
+
+## 10. Chase CSV Parser Format Issues
+
+**Date:** January 2025
+
+### The Problem: CSV Upload Returning 400 Error
+
+Users were getting "CSV format not supported" errors when uploading Chase bank CSV files, despite the file being the correct format.
+
+### Root Cause Analysis
+
+**Issue 1: CSV Parser Header Misinterpretation**
+The CSV parser was configured to expect column headers, but Chase CSV files don't have headers. The parser was treating the first row of actual transaction data as headers:
+
+```
+CSV Headers detected: [
+  'DEBIT',
+  '07/08/2025', 
+  'ORIG CO NAME:Coinbase.com...',
+  '-5.00',
+  'ACH_DEBIT',
+  ''
+]
+```
+
+**Issue 2: Data Access Pattern Mismatch**
+The parser was returning objects with string keys (`'0'`, `'1'`, `'2'`) but the code was trying to access array indices (`row[0]`, `row[1]`, `row[2]`).
+
+**Issue 3: Environment Mismatch**
+Transactions were being uploaded to the development database while the frontend was reading from the staging database.
+
+### Solutions Implemented
+
+**1. Fixed CSV Parser Configuration:**
+```javascript
+// Before (incorrect)
+.pipe(csv({ skipLines: 1, mapHeaders: ({ header }) => header.trim() }))
+
+// After (correct)
+.pipe(csv({ headers: false }))
+```
+
+**2. Updated Data Access Pattern:**
+```javascript
+// Before (incorrect)
+const amountValue = row[3];
+const dateValue = row[1];
+
+// After (correct)
+const amountValue = row['3'];
+const dateValue = row['1'];
+```
+
+**3. Fixed Environment Synchronization:**
+```bash
+# Start backend in staging mode to match frontend
+cd backend && npm run dev:staging
+```
+
+**4. Added Comprehensive Debugging:**
+- Log actual CSV row structure
+- Track transaction processing count
+- Validate data before database insertion
+
+### Key Debugging Techniques
+
+1. **CSV Structure Analysis**: Always log the actual structure of parsed CSV data
+2. **Environment Verification**: Ensure frontend and backend are using the same database
+3. **Data Type Inspection**: Check whether CSV parsers return arrays or objects
+4. **Step-by-Step Validation**: Verify each stage of the data pipeline
+
+### Results
+- Successfully processed **1,504 transactions** from Chase CSV
+- Fixed automatic routing to dashboard after CSV upload
+- Eliminated 400 errors during CSV processing
+
+### TypeScript Compilation Fix
+**Issue:** Function return type mismatch
+```javascript
+// Before (causing compilation error)
+(async (req: Request, res: Response): Promise<void> => {
+  return res.status(403).json({ error: 'Forbidden' });
+}
+
+// After (fixed)
+(async (req: Request, res: Response) => {
+  res.status(403).json({ error: 'Forbidden' });
+  return;
+}
+```
+
+**Key Insight:** When debugging CSV upload issues, always verify the exact structure of the parsed data and ensure environment consistency between frontend and backend. 

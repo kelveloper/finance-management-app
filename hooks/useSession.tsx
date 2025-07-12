@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { storage } from '../utils/storage';
+import { isProductionLike, envLog } from '../utils/environment';
 
 interface Session {
   accessToken: string | null;
@@ -21,6 +22,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const restoreSession = async () => {
       try {
+        // In staging/production environments, always start with fresh session
+        if (isProductionLike()) {
+          envLog('Staging environment detected - clearing any existing session data');
+          await storage.removeItem('access_token');
+          await storage.removeItem('user_id');
+          setSession({ accessToken: null, userId: null, isLoading: false });
+          return;
+        }
+
+        // Development: restore existing session
         const token = await storage.getItem('access_token');
         const userId = await storage.getItem('user_id');
         setSession({ accessToken: token, userId: userId, isLoading: false });

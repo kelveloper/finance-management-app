@@ -5,6 +5,21 @@ import * as DocumentPicker from 'expo-document-picker';
 import { UploadCloud } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// Web-compatible alert function
+const showAlert = (title: string, message: string, buttons?: Array<{text: string, onPress?: () => void, style?: 'default' | 'cancel' | 'destructive'}>) => {
+  if (Platform.OS === 'web') {
+    // Use browser's native alert for web
+    const result = window.alert(`${title}\n\n${message}`);
+    // If there are buttons, call the first button's onPress
+    if (buttons && buttons[0] && buttons[0].onPress) {
+      buttons[0].onPress();
+    }
+  } else {
+    // Use React Native Alert for mobile
+    Alert.alert(title, message, buttons);
+  }
+};
+
 export default function BankLinkingScreen() {
   const { setAccessToken, userId } = useSession();
   const [isCsvUploading, setIsCsvUploading] = useState(false);
@@ -42,15 +57,24 @@ export default function BankLinkingScreen() {
         const data = await response.json();
 
         if (response.ok && data.accessToken) {
-          Alert.alert('Success', 'Mock data uploaded successfully!');
+          showAlert('Success', 'Transaction data uploaded successfully!');
           await setAccessToken(data.accessToken);
         } else {
-          throw new Error(data.error || 'Failed to upload CSV.');
+          // Handle specific error cases
+          if (response.status === 400 && data.error?.includes('No valid transactions found')) {
+            showAlert(
+              'CSV Format Not Supported', 
+              'The CSV format you uploaded is not currently supported. We currently support Chase bank CSV exports.\n\nPlease try uploading a Chase CSV file, or contact support if you need help with other bank formats.',
+              [{ text: 'OK' }]
+            );
+          } else {
+            throw new Error(data.error || 'Failed to upload CSV.');
+          }
         }
       }
     } catch (error: any) {
       console.error('CSV Upload Error:', error);
-      Alert.alert('Error', error.message || 'An unexpected error occurred during CSV upload.');
+      showAlert('Error', error.message || 'An unexpected error occurred during CSV upload.');
     } finally {
       setIsCsvUploading(false);
     }
@@ -65,8 +89,14 @@ export default function BankLinkingScreen() {
       <View style={styles.content}>
         <Text style={styles.title}>Upload Your Data</Text>
         <Text style={styles.description}>
-          Get started by uploading a CSV file of your transaction history. This allows you to use the app with mock data.
+          Get started by uploading a CSV file of your transaction history. We currently support Chase bank CSV exports.
         </Text>
+        
+        <View style={styles.supportedFormatsContainer}>
+          <Text style={styles.supportedFormatsTitle}>Supported Formats:</Text>
+          <Text style={styles.supportedFormatsText}>• Chase Bank CSV exports</Text>
+          <Text style={styles.supportedFormatsText}>• More banks coming soon!</Text>
+        </View>
 
         <TouchableOpacity
           style={styles.button}
@@ -177,5 +207,26 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#64748B',
     fontSize: 14,
+  },
+  supportedFormatsContainer: {
+    backgroundColor: '#0F172A',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 24,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  supportedFormatsTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#10B981',
+    marginBottom: 8,
+  },
+  supportedFormatsText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#94A3B8',
+    marginBottom: 4,
   },
 });
