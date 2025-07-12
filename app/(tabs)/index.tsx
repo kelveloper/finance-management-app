@@ -2,7 +2,7 @@ import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, 
 import React, { useState } from 'react';
 import moment from 'moment';
 import { useQuery } from '@tanstack/react-query';
-import { Transaction, Insight, RecurringTransaction, PersonalizedInsight, SmartGoalSuggestion } from '../../../common/types';
+import { Transaction, Insight, RecurringTransaction, PersonalizedInsight } from '../../../common/types';
 import { useSession } from '../../hooks/useSession';
 
 const API_HOST = 'http://127.0.0.1:8000'; // Assuming backend runs locally on port 8000
@@ -54,8 +54,7 @@ export default function HomeScreen() {
     insights: { 
       anomalies: Insight[], 
       recurring: RecurringTransaction[],
-      personalized: PersonalizedInsight[],
-      smartGoals: SmartGoalSuggestion[]
+      personalized: PersonalizedInsight[]
     };
   }>({
     queryKey: ['financialData'],
@@ -75,7 +74,6 @@ export default function HomeScreen() {
   const transactions = data?.transactions ?? [];
   const recurring = data?.insights?.recurring ?? [];
   const personalizedInsights = data?.insights?.personalized ?? [];
-  const smartGoals = data?.insights?.smartGoals ?? [];
 
   const toggleInsightExpansion = (insightId: string) => {
     setExpandedInsights(prev => {
@@ -297,22 +295,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {smartGoals.length > 0 && (
-            <View style={styles.smartGoalsContainer}>
-              <Text style={styles.insightsTitle}>🎯 Smart Goal Suggestions</Text>
-              {smartGoals.map((goal) => (
-                <View key={goal.id} style={[styles.insightCard, styles.smartGoalCard]}>
-                  <Text style={styles.goalTitle}>{goal.title}</Text>
-                  <Text style={styles.goalDescription}>{goal.description}</Text>
-                  <View style={styles.goalDetails}>
-                    <Text style={styles.goalAmount}>${goal.suggested_amount.toFixed(2)}</Text>
-                    <Text style={styles.goalTimeframe}>{goal.timeframe_months} months</Text>
-                  </View>
-                  <Text style={styles.goalReasoning}>{goal.reasoning}</Text>
-                </View>
-              ))}
-            </View>
-          )}
+
           <Text style={styles.title}>Transactions</Text>
         </>
       )}
@@ -563,48 +546,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     paddingLeft: 8,
   },
-  // Smart Goals styles
-  smartGoalsContainer: {
-    marginBottom: 20,
-  },
-  smartGoalCard: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)', // Amber tint
-    borderColor: 'rgba(245, 158, 11, 0.3)',
-  },
-  goalTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FCD34D',
-    marginBottom: 4,
-  },
-  goalDescription: {
-    fontSize: 14,
-    color: '#FEF3C7',
-    marginBottom: 8,
-  },
-  goalDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderRadius: 6,
-  },
-  goalAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#F59E0B',
-  },
-  goalTimeframe: {
-    fontSize: 14,
-    color: '#FCD34D',
-  },
-  goalReasoning: {
-    fontSize: 13,
-    color: '#FEF3C7',
-    fontStyle: 'italic',
-  },
+
   greetingContainer: {
     flexDirection: 'row',
     alignItems: 'center',

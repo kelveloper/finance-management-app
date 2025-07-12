@@ -3,7 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useState, useEffect } from 'react';
 import { Target, Plus, Calendar, DollarSign, TrendingUp, X, TrendingDown, Zap, BarChart3, Award, Clock } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
-import { Transaction } from '../../../common/types';
+import { Transaction, SmartGoalSuggestion } from '../../../common/types';
+import { useSession } from '../../hooks/useSession';
 
 const API_HOST = 'http://127.0.0.1:8000';
 
@@ -65,6 +66,7 @@ const mockDebts = [
 ];
 
 export default function GoalsScreen() {
+  const { userId } = useSession();
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [selectedDebt, setSelectedDebt] = useState(null);
   const [showNewGoalModal, setShowNewGoalModal] = useState(false);
@@ -91,6 +93,28 @@ export default function GoalsScreen() {
       return response.json();
     }
   });
+
+  // Fetch smart goal suggestions
+  const { data: smartGoalData } = useQuery<{
+    insights: { 
+      smartGoals: SmartGoalSuggestion[]
+    };
+  }>({
+    queryKey: ['smartGoals'],
+    queryFn: async () => {
+      const response = await fetch(`${API_HOST}/api/data`, {
+        headers: {
+          'x-user-id': userId || 'mock_user_123',
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch smart goal suggestions');
+      }
+      return response.json();
+    }
+  });
+
+  const smartGoals = smartGoalData?.insights?.smartGoals ?? [];
 
   // Calculate spending impact on goals
   useEffect(() => {
@@ -347,6 +371,33 @@ export default function GoalsScreen() {
                     }}
                   >
                     <Text style={styles.contributeButtonText}>Contribute Now</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Smart Goal Suggestions */}
+        {smartGoals.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>🎯 Smart Goal Suggestions</Text>
+              <Text style={styles.sectionSubtitle}>AI-powered recommendations based on your spending</Text>
+            </View>
+            <View style={styles.smartGoalsList}>
+              {smartGoals.map((goal) => (
+                <View key={goal.id} style={styles.smartGoalCard}>
+                  <Text style={styles.smartGoalTitle}>{goal.title}</Text>
+                  <Text style={styles.smartGoalDescription}>{goal.description}</Text>
+                  <View style={styles.smartGoalDetails}>
+                    <Text style={styles.smartGoalAmount}>${goal.suggested_amount.toFixed(2)}</Text>
+                    <Text style={styles.smartGoalTimeframe}>{goal.timeframe_months} months</Text>
+                  </View>
+                  <Text style={styles.smartGoalReasoning}>{goal.reasoning}</Text>
+                  <TouchableOpacity style={styles.createGoalButton}>
+                    <Plus size={16} color="#F59E0B" />
+                    <Text style={styles.createGoalButtonText}>Create Goal</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -1441,5 +1492,77 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#64748B',
+  },
+  // Smart Goal Suggestions styles
+  smartGoalsList: {
+    gap: 16,
+  },
+  smartGoalCard: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)', // Amber tint
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+  },
+  smartGoalTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FCD34D',
+    marginBottom: 8,
+  },
+  smartGoalDescription: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#FEF3C7',
+    marginBottom: 12,
+  },
+  smartGoalDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderRadius: 8,
+  },
+  smartGoalAmount: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    color: '#F59E0B',
+  },
+  smartGoalTimeframe: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#FCD34D',
+  },
+  smartGoalReasoning: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: '#FEF3C7',
+    fontStyle: 'italic',
+    marginBottom: 16,
+  },
+  createGoalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
+  createGoalButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#F59E0B',
+    marginLeft: 6,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
+    marginTop: 4,
   },
 });
