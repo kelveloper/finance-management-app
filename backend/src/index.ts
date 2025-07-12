@@ -9,6 +9,7 @@ import { supabase } from './supabase';
 import { detectRecurringTransactions } from './services/recurring';
 import { PersonalizedAI } from './services/personalized-ai';
 import { UserProfileService } from './services/user-profile';
+import { categorizeTransactions } from './categorize-transactions';
 import { Transaction } from '../../common/types';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -610,7 +611,7 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                         posted_date: parsedDate,
                         description: descriptionValue.trim(),
                     amount: amount,
-                        category: null, // Will be categorized later by AI
+                        category: 'Uncategorized', // Will be categorized automatically by AI
                         tag: null, // Will be tagged later by AI
                 });
                 }
@@ -638,10 +639,14 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                     throw error;
                 }
                 
+                // Automatically categorize the newly uploaded transactions
+                console.log('Running automatic categorization after CSV upload...');
+                await categorizeTransactions();
+                
                 // Use a simple timestamp as the access token for the session
                 const accessToken = new Date().getTime().toString();
                 res.status(200).json({ 
-                    message: `${transactions.length} transactions uploaded successfully.`,
+                    message: `${transactions.length} transactions uploaded and categorized successfully.`,
                     accessToken: accessToken,
                 });
 

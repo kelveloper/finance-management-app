@@ -34,7 +34,7 @@ const getCategoryFromDescription = (description: string): string => {
   return 'General'; // Default category if no rule matches
 };
 
-const categorizeTransactions = async () => {
+export const categorizeTransactions = async () => {
   console.log('Fetching uncategorized transactions from Supabase...');
 
   const { data: transactions, error } = await supabase
@@ -69,4 +69,7 @@ const categorizeTransactions = async () => {
   console.log('Rule-based categorization complete!');
 };
 
-categorizeTransactions(); 
+// Run categorization when this file is executed directly
+if (require.main === module) {
+  categorizeTransactions();
+} 
