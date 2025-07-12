@@ -603,16 +603,16 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                     // Generate unique transaction ID
                     const transactionId = `${userId}_${Date.now()}_${transactions.length}`;
                     
-                    transactions.push({
+                transactions.push({
                         id: transactionId,
-                        user_id: userId,
+                    user_id: userId,
                         account_id: 'chase-8793', // Default account ID for Chase uploads
                         posted_date: parsedDate,
                         description: descriptionValue.trim(),
-                        amount: amount,
+                    amount: amount,
                         category: null, // Will be categorized later by AI
                         tag: null, // Will be tagged later by AI
-                    });
+                });
                 }
             }
         })
