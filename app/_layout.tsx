@@ -44,8 +44,8 @@ const SessionGate = ({ children }: { children: React.ReactNode }) => {
     } 
     // DEVELOPMENT: Route directly to transaction page for development work
     else {
-      // Force redirect to transaction page in development mode for feature work
-      if (!inOnboardingGroup) {
+      // Only redirect to tabs if user is not already in tabs or onboarding
+      if (!inOnboardingGroup && segments[0] !== '(tabs)') {
         envLog('Development: Forcing redirect to transaction page for development');
         router.replace('/(tabs)');
       }

@@ -373,7 +373,7 @@ export class PersonalizedAI {
   private generateBehavioralNudges(): PersonalizedInsight[] {
     const insights: PersonalizedInsight[] = [];
     const weeklySpending = this.getWeeklySpendingPattern();
-    
+
     // Weekend spending pattern
     if (weeklySpending.weekend > weeklySpending.weekday * 1.5) {
       insights.push({
@@ -403,7 +403,7 @@ export class PersonalizedAI {
     
     // This would integrate with existing goals if available
     // For now, provide general optimization suggestions
-    
+
     return insights;
   }
 

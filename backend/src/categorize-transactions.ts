@@ -72,15 +72,14 @@ const SUBCATEGORY_STRUCTURE = {
     'Salary': ['SALARY', 'PAYROLL', 'DIRECT DEP', 'WAGES', 'INCOME'],
     'Freelance': ['FREELANCE', 'CONTRACTOR', 'CONSULTATION', 'GIG'],
     'Investment Income': ['DIVIDEND', 'INTEREST', 'CAPITAL GAINS', 'INVESTMENT INCOME'],
-    'Other Income': ['BONUS', 'COMMISSION', 'TIPS', 'GIFT', 'REFUND', 'POPONSMILESLLC', 'CITLALLI DIAZ', 'KELVIN SALDANA', 'OSCAR SALDANA']
+    'Other Income': ['BONUS', 'COMMISSION', 'TIPS', 'GIFT', 'REFUND', 'Zelle payment from']
   }
 };
 
-// Enhanced categorization rules (main categories)
+// Privacy-focused categorization rules (NO personal names)
 const ENHANCED_CATEGORY_RULES: { [category: string]: string[] } = {
   'Income': [
-    'POPONSMILESLLC', 'Zelle payment from', 'DIRECT DEP', 'SALARY', 'PAYROLL',
-    'CITLALLI DIAZ', 'KELVIN SALDANA', 'OSCAR SALDANA', 'ALEX ELVIS', 'DARWIN PEREZ', 'ERICKA SALDANA'
+    'DIRECT DEP', 'SALARY', 'PAYROLL', 'Zelle payment from', 'FREELANCE', 'CONTRACTOR'
   ],
   'Food & Drink': [
     "MCDONALD'S", 'GRUBHUB', 'SQ *', 'TST*', 'CARMINES PIZZERIA', 
@@ -209,7 +208,11 @@ export const learnFromUserFeedback = async (
   transactionId: string, 
   userCategory: string, 
   userSubcategory?: string
-): Promise<boolean> => {
+): Promise<{ 
+  success: boolean; 
+  similarUpdated: number; 
+  patternLearned: string;
+}> => {
   try {
     // Get the transaction description
     const { data: transaction, error: fetchError } = await supabase
@@ -220,10 +223,10 @@ export const learnFromUserFeedback = async (
 
     if (fetchError || !transaction) {
       console.error('Error fetching transaction for learning:', fetchError);
-      return false;
+      return { success: false, similarUpdated: 0, patternLearned: '' };
     }
 
-    // Update the transaction category and subcategory
+    // Update the original transaction category and subcategory
     const { error: updateError } = await supabase
       .from('transactions')
       .update({ 
@@ -234,30 +237,162 @@ export const learnFromUserFeedback = async (
 
     if (updateError) {
       console.error('Error updating transaction category:', updateError);
-      return false;
+      return { success: false, similarUpdated: 0, patternLearned: '' };
     }
 
-    // Store the learning data for future improvements
-    const { error: learningError } = await supabase
-      .from('categorization_feedback')
-      .insert({
-        transaction_id: transactionId,
-        original_description: transaction.description,
-        user_category: userCategory,
-        user_subcategory: userSubcategory || null,
-        created_at: new Date().toISOString()
+    // Extract key patterns from the transaction description
+    const description = transaction.description.toUpperCase();
+    const patterns = extractKeyPatterns(description);
+    
+    console.log(`🧠 Learning from: "${transaction.description}"`);
+    console.log(`📝 Extracted patterns: ${patterns.join(', ')}`);
+    console.log(`🎯 User categorized as: ${userCategory}${userSubcategory ? ` > ${userSubcategory}` : ''}`);
+
+    // Find all similar transactions that haven't been manually categorized
+    const { data: similarTransactions, error: similarError } = await supabase
+      .from('transactions')
+      .select('id, description, category, subcategory')
+      .neq('id', transactionId); // Exclude the original transaction
+
+    if (similarError || !similarTransactions) {
+      console.log('Could not fetch similar transactions');
+      return { success: true, similarUpdated: 0, patternLearned: patterns.join(', ') };
+    }
+
+    // Filter for truly similar transactions using pattern matching
+    const matchingTransactions = similarTransactions.filter(t => {
+      return patterns.some(pattern => 
+        t.description.toUpperCase().includes(pattern) ||
+        smartMatch(t.description, [pattern])
+      );
+    });
+
+    console.log(`🔍 Found ${matchingTransactions.length} similar transactions to update`);
+
+    // Update all similar transactions
+    let updatedCount = 0;
+    if (matchingTransactions.length > 0) {
+      const updates = matchingTransactions.map(t => {
+        console.log(`  📝 Updating: "${t.description.substring(0, 50)}..." -> ${userCategory}${userSubcategory ? ` > ${userSubcategory}` : ''}`);
+        return supabase
+          .from('transactions')
+          .update({ 
+            category: userCategory,
+            subcategory: userSubcategory || null
+          })
+          .eq('id', t.id);
       });
 
-    if (learningError) {
-      console.log('Note: Could not store learning data (table may not exist):', learningError.message);
+      await Promise.all(updates);
+      updatedCount = matchingTransactions.length;
     }
 
-    console.log(`✅ Learned: "${transaction.description}" -> ${userCategory}${userSubcategory ? ` > ${userSubcategory}` : ''}`);
-    return true;
+    // Store the learning data in AI learning engine (if database table exists)
+    try {
+      const { error: learningError } = await supabase
+        .from('ai_learned_patterns')
+        .insert({
+          pattern: patterns[0] || transaction.description.substring(0, 50), // Use the strongest pattern
+          category: userCategory,
+          subcategory: userSubcategory || null,
+          confidence: 0.9, // High confidence for user-provided data
+          occurrences: updatedCount + 1,
+          created_at: new Date().toISOString(),
+          last_seen: new Date().toISOString()
+        });
+
+      if (learningError) {
+        // Try to update existing pattern instead
+        const { error: updatePatternError } = await supabase
+          .from('ai_learned_patterns')
+          .update({
+            confidence: 0.9,
+            occurrences: updatedCount + 1,
+            last_seen: new Date().toISOString()
+          })
+          .eq('pattern', patterns[0] || transaction.description.substring(0, 50))
+          .eq('category', userCategory);
+
+        if (updatePatternError) {
+          console.log('Note: Could not store/update AI learning pattern:', updatePatternError.message);
+        }
+      }
+    } catch (aiError) {
+      console.log('Note: AI learning table may not exist yet');
+    }
+
+    // Store the categorization feedback
+    try {
+      const { error: feedbackError } = await supabase
+        .from('categorization_feedback')
+        .insert({
+          transaction_id: transactionId,
+          original_description: transaction.description,
+          user_category: userCategory,
+          user_subcategory: userSubcategory || null,
+          similar_updated: updatedCount,
+          patterns_learned: patterns.join(', '),
+          created_at: new Date().toISOString()
+        });
+
+      if (feedbackError) {
+        console.log('Note: Could not store categorization feedback:', feedbackError.message);
+      }
+    } catch (feedbackError) {
+      console.log('Note: Categorization feedback table may not exist yet');
+    }
+
+    console.log(`✅ Successfully learned pattern and updated ${updatedCount + 1} total transactions`);
+    return { 
+      success: true, 
+      similarUpdated: updatedCount, 
+      patternLearned: patterns.join(', ')
+    };
   } catch (error) {
     console.error('Error in learning from user feedback:', error);
-    return false;
+    return { success: false, similarUpdated: 0, patternLearned: '' };
   }
+};
+
+// Extract key patterns from transaction description for learning
+const extractKeyPatterns = (description: string): string[] => {
+  const patterns: string[] = [];
+  const normalized = description.toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').trim();
+  
+  // Split into words and filter meaningful ones
+  const words = normalized.split(/\s+/).filter(word => 
+    word.length > 2 && 
+    !['THE', 'AND', 'FOR', 'WITH', 'FROM', 'PURCHASE', 'DEBIT', 'CREDIT'].includes(word)
+  );
+  
+  // Company/merchant names (often the first significant word)
+  if (words.length > 0) {
+    patterns.push(words[0]);
+  }
+  
+  // Look for common business patterns
+  const businessPatterns = [
+    'STARBUCKS', 'MCDONALD', 'UBER', 'COINBASE', 'GRUBHUB', 'PAYPAL',
+    'AMAZON', 'APPLE', 'NETFLIX', 'SPOTIFY', 'FRESH&CO', 'FRESH & CO',
+    'CVS', 'WALGREENS', 'TARGET', 'WALMART', 'COSTCO'
+  ];
+  
+  businessPatterns.forEach(pattern => {
+    if (normalized.includes(pattern)) {
+      patterns.push(pattern);
+    }
+  });
+  
+  // Look for multi-word company names
+  for (let i = 0; i < words.length - 1; i++) {
+    const twoWordPattern = `${words[i]} ${words[i + 1]}`;
+    if (twoWordPattern.length > 6) {
+      patterns.push(twoWordPattern);
+    }
+  }
+  
+  // Remove duplicates and return most specific patterns first
+  return [...new Set(patterns)].slice(0, 3);
 };
 
 // Auto-learn from similar transactions (enhanced for subcategories)
@@ -400,6 +535,68 @@ export const categorizeTransactions = async (): Promise<{
 };
 
 // Get subcategory structure for frontend
+// Learn from negative feedback (when users deselect transactions in preview)
+export const learnFromNegativeFeedback = async (
+  selectedTransactionId: string,
+  deselectedTransactionIds: string[],
+  category: string,
+  subcategory?: string
+): Promise<{ success: boolean; patternsLearned: number }> => {
+  try {
+    // Get the selected transaction
+    const { data: selectedTransaction, error: selectedError } = await supabase
+      .from('transactions')
+      .select('description')
+      .eq('id', selectedTransactionId)
+      .single();
+
+    if (selectedError || !selectedTransaction) {
+      console.error('Error fetching selected transaction:', selectedError);
+      return { success: false, patternsLearned: 0 };
+    }
+
+    // Get the deselected transactions
+    const { data: deselectedTransactions, error: deselectedError } = await supabase
+      .from('transactions')
+      .select('id, description')
+      .in('id', deselectedTransactionIds);
+
+    if (deselectedError || !deselectedTransactions) {
+      console.error('Error fetching deselected transactions:', deselectedError);
+      return { success: false, patternsLearned: 0 };
+    }
+
+    console.log(`🧠 Learning from negative feedback:`);
+    console.log(`✅ Selected: "${selectedTransaction.description.substring(0, 50)}..."`);
+    console.log(`❌ Deselected: ${deselectedTransactions.length} transactions`);
+
+    // Use AI learning engine for sophisticated negative learning
+    const { aiLearningEngine } = await import('./services/ai-learning-engine');
+    
+    let patternsLearned = 0;
+    
+    // Learn from each deselected transaction
+    for (const deselectedTx of deselectedTransactions) {
+      await aiLearningEngine.learnFromNegativeFeedback(
+        selectedTransaction.description,
+        deselectedTx.description,
+        category,
+        subcategory
+      );
+      patternsLearned++;
+      
+      console.log(`📉 Learned negative pattern from: "${deselectedTx.description.substring(0, 50)}..."`);
+    }
+
+    console.log(`✅ Learned ${patternsLearned} negative patterns for category: ${category}${subcategory ? ` > ${subcategory}` : ''}`);
+    
+    return { success: true, patternsLearned };
+  } catch (error) {
+    console.error('Error learning from negative feedback:', error);
+    return { success: false, patternsLearned: 0 };
+  }
+};
+
 export const getSubcategoryStructure = () => {
   return SUBCATEGORY_STRUCTURE;
 }; 

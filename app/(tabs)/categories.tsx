@@ -1,71 +1,152 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIndicator, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
-import { Utensils, ShoppingBag, Car, Coffee, Chrome as HomeIcon, X, CircleHelp as HelpCircle, TrendingUp, CircleAlert as AlertCircle } from 'lucide-react-native';
+import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  Utensils, 
+  ShoppingBag, 
+  Car, 
+  Coffee, 
+  DollarSign, 
+  Heart, 
+  Briefcase,
+  Home as HomeIcon, 
+  X, 
+  CircleHelp as HelpCircle, 
+  TrendingUp, 
+  CircleAlert as AlertCircle 
+} from 'lucide-react-native';
+import { getApiUrl } from '../../utils/environment';
+import { useSession } from '../../hooks/useSession';
+import moment from 'moment';
 
-const mockCategories = [
-  {
-    id: 1,
-    name: 'Dining Out',
-    amount: 287.50,
-    transactions: 12,
-    percentage: 22,
-    trend: 35,
-    color: '#EF4444',
-    icon: Utensils,
-    weeklyAverage: 65.00,
-    isSpike: true,
-    spikeReason: null,
-    recentTransactions: [
-      { merchant: 'The Cheesecake Factory', amount: 45.67, date: '2025-01-14' },
-      { merchant: 'McDonald\'s', amount: 12.34, date: '2025-01-13' },
-      { merchant: 'Olive Garden', amount: 67.89, date: '2025-01-12' },
-      { merchant: 'Starbucks', amount: 8.50, date: '2025-01-11' },
-      { merchant: 'Chipotle', amount: 15.25, date: '2025-01-10' },
-    ]
-  },
-  {
-    id: 2,
-    name: 'Groceries',
-    amount: 195.30,
-    transactions: 8,
-    percentage: 15,
-    trend: -8,
-    color: '#10B981',
-    icon: ShoppingBag,
-    weeklyAverage: 85.00,
-    isSpike: false,
-    spikeReason: null,
-    recentTransactions: [
-      { merchant: 'Whole Foods', amount: 67.32, date: '2025-01-15' },
-      { merchant: 'Safeway', amount: 45.21, date: '2025-01-12' },
-      { merchant: 'Target', amount: 82.77, date: '2025-01-09' },
-    ]
-  },
-  {
-    id: 3,
-    name: 'Transportation',
-    amount: 145.00,
-    transactions: 15,
-    percentage: 11,
-    trend: 12,
-    color: '#3B82F6',
-    icon: Car,
-    weeklyAverage: 32.00,
-    isSpike: false,
-    spikeReason: null,
-    recentTransactions: [
-      { merchant: 'Shell Gas Station', amount: 38.00, date: '2025-01-13' },
-      { merchant: 'Uber', amount: 12.50, date: '2025-01-14' },
-      { merchant: 'Metro Transit', amount: 2.50, date: '2025-01-15' },
-    ]
-  },
-];
+// Icon mapping for categories
+const categoryIcons: { [key: string]: any } = {
+  'Food & Drink': Utensils,
+  'Shopping': ShoppingBag,
+  'Transportation': Car,
+  'Entertainment': Coffee,
+  'Bills & Utilities': HomeIcon,
+  'Financial & Transfers': DollarSign,
+  'Health & Medical': Heart,
+  'Personal Care': Heart,
+  'Income': Briefcase,
+};
+
+// Color mapping for categories
+const categoryColors: { [key: string]: string } = {
+  'Food & Drink': '#EF4444',
+  'Shopping': '#10B981',
+  'Transportation': '#3B82F6',
+  'Entertainment': '#8B5CF6',
+  'Bills & Utilities': '#F59E0B',
+  'Financial & Transfers': '#06B6D4',
+  'Health & Medical': '#EC4899',
+  'Personal Care': '#84CC16',
+  'Income': '#22C55E',
+};
+
+interface Transaction {
+  id: string;
+  description: string;
+  amount: number;
+  posted_date: string;
+  category?: string;
+  subcategory?: string;
+}
+
+interface CategoryData {
+  name: string;
+  amount: number;
+  transactions: number;
+  percentage: number;
+  color: string;
+  icon: any;
+  recentTransactions: Transaction[];
+}
 
 export default function CategoriesScreen() {
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showWhyModal, setShowWhyModal] = useState(false);
-  const [spikeReason, setSpikeReason] = useState('');
+  const { userId } = useSession();
+  const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Fetch transaction data
+  const { 
+    data, 
+    isLoading, 
+    error,
+    refetch 
+  } = useQuery<{
+    transactions: Transaction[];
+  }>({
+    queryKey: ['financialData'],
+    queryFn: async () => {
+      const response = await fetch(`${getApiUrl()}/api/data`, {
+        headers: {
+          'x-user-id': userId || 'mock_user_123',
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch financial data from the server.');
+      }
+      return response.json();
+    }
+  });
+
+  const transactions = data?.transactions ?? [];
+
+  // Process transactions into category data
+  const categoryData = useMemo(() => {
+    // Filter out income and positive transactions for spending analysis
+    const spendingTransactions = transactions.filter(t => 
+      t.amount < 0 && 
+      t.category && 
+      t.category !== 'Income'
+    );
+
+    // Group by main category only (not subcategory)
+    const categoryGroups: { [key: string]: Transaction[] } = {};
+    spendingTransactions.forEach(transaction => {
+      const category = transaction.category || 'Uncategorized';
+      if (!categoryGroups[category]) {
+        categoryGroups[category] = [];
+      }
+      categoryGroups[category].push(transaction);
+    });
+
+    // Calculate totals and create category data
+    const totalSpending = spendingTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    
+    const categories: CategoryData[] = Object.entries(categoryGroups).map(([categoryName, categoryTransactions]) => {
+      const totalAmount = categoryTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      const percentage = totalSpending > 0 ? Math.round((totalAmount / totalSpending) * 100) : 0;
+      
+      // Get recent transactions (last 5)
+      const recentTransactions = categoryTransactions
+        .sort((a, b) => new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime())
+        .slice(0, 5);
+
+      return {
+        name: categoryName,
+        amount: totalAmount,
+        transactions: categoryTransactions.length,
+        percentage,
+        color: categoryColors[categoryName] || '#64748B',
+        icon: categoryIcons[categoryName] || ShoppingBag,
+        recentTransactions
+      };
+    });
+
+    // Sort by spending amount (highest to lowest)
+    return categories.sort((a, b) => b.amount - a.amount);
+  }, [transactions]);
+
+  // Handle refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -75,33 +156,53 @@ export default function CategoriesScreen() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    return moment(dateString).format('MMM D');
   };
 
-  const handleCategoryPress = (category) => {
+  const handleCategoryPress = (category: CategoryData) => {
     setSelectedCategory(category);
-    if (category.isSpike && !category.spikeReason) {
-      setShowWhyModal(true);
-    }
   };
 
-  const handleSpikeReasonSubmit = (reason: string) => {
-    setSpikeReason(reason);
-    setShowWhyModal(false);
-    // In real app, save this to backend
-  };
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#0F172A', '#1E293B']}
+          style={styles.header}
+        >
+          <Text style={styles.headerTitle}>Spending Categories</Text>
+          <Text style={styles.headerSubtitle}>Loading...</Text>
+        </LinearGradient>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#34D399" />
+          <Text style={styles.loadingText}>Loading your spending data...</Text>
+        </View>
+      </View>
+    );
+  }
 
-  const spikeReasons = [
-    'Work stress',
-    'Celebration',
-    'Social events',
-    'Impulse buying',
-    'Travel/vacation',
-    'Other'
-  ];
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#0F172A', '#1E293B']}
+          style={styles.header}
+        >
+          <Text style={styles.headerTitle}>Spending Categories</Text>
+          <Text style={styles.headerSubtitle}>Error loading data</Text>
+        </LinearGradient>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load spending data</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const totalSpending = categoryData.reduce((sum, cat) => sum + cat.amount, 0);
+  const currentMonth = moment().format('MMMM YYYY');
 
   return (
     <View style={styles.container}>
@@ -111,21 +212,33 @@ export default function CategoriesScreen() {
         style={styles.header}
       >
         <Text style={styles.headerTitle}>Spending Categories</Text>
-        <Text style={styles.headerSubtitle}>January 2025</Text>
+        <Text style={styles.headerSubtitle}>{currentMonth}</Text>
+        <Text style={styles.totalSpending}>Total: {formatCurrency(totalSpending)}</Text>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Categories List */}
         <View style={styles.categoriesList}>
-          {mockCategories.map((category) => {
+          {categoryData.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No spending data available</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Start making transactions to see your spending breakdown
+              </Text>
+            </View>
+          ) : (
+            categoryData.map((category, index) => {
             const IconComponent = category.icon;
             return (
               <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  category.isSpike && styles.categoryCardAlert
-                ]}
+                  key={category.name}
+                  style={styles.categoryCard}
                 onPress={() => handleCategoryPress(category)}
                 activeOpacity={0.8}
               >
@@ -137,9 +250,9 @@ export default function CategoriesScreen() {
                     <View>
                       <View style={styles.categoryTitleRow}>
                         <Text style={styles.categoryName}>{category.name}</Text>
-                        {category.isSpike && (
-                          <AlertCircle size={16} color="#F59E0B" />
-                        )}
+                          <View style={styles.rankBadge}>
+                            <Text style={styles.rankText}>#{index + 1}</Text>
+                          </View>
                       </View>
                       <Text style={styles.categoryTransactions}>
                         {category.transactions} transactions
@@ -148,32 +261,9 @@ export default function CategoriesScreen() {
                   </View>
                   <View style={styles.categoryRight}>
                     <Text style={styles.categoryAmount}>{formatCurrency(category.amount)}</Text>
-                    <View style={styles.trendContainer}>
-                      <TrendingUp size={12} color={category.trend > 0 ? '#EF4444' : '#10B981'} />
-                      <Text style={[
-                        styles.trendText,
-                        { color: category.trend > 0 ? '#EF4444' : '#10B981' }
-                      ]}>
-                        {category.trend > 0 ? '+' : ''}{category.trend}%
-                      </Text>
+                      <Text style={styles.percentageText}>{category.percentage}% of spending</Text>
                     </View>
                   </View>
-                </View>
-
-                {category.isSpike && (
-                  <View style={styles.spikeAlert}>
-                    <Text style={styles.spikeAlertText}>
-                      Above weekly average of {formatCurrency(category.weeklyAverage)}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.whyButton}
-                      onPress={() => setShowWhyModal(true)}
-                    >
-                      <HelpCircle size={14} color="#F59E0B" />
-                      <Text style={styles.whyButtonText}>Why the spike?</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
 
                 <View style={styles.progressBarContainer}>
                   <View style={styles.progressBar}>
@@ -182,11 +272,11 @@ export default function CategoriesScreen() {
                       { width: `${category.percentage}%`, backgroundColor: category.color }
                     ]} />
                   </View>
-                  <Text style={styles.progressText}>{category.percentage}% of spending</Text>
                 </View>
               </TouchableOpacity>
             );
-          })}
+            })
+          )}
         </View>
       </ScrollView>
 
@@ -219,26 +309,25 @@ export default function CategoriesScreen() {
                   <Text style={styles.statLabel}>Transactions</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={[
-                    styles.statValue,
-                    { color: selectedCategory.trend > 0 ? '#EF4444' : '#10B981' }
-                  ]}>
-                    {selectedCategory.trend > 0 ? '+' : ''}{selectedCategory.trend}%
-                  </Text>
-                  <Text style={styles.statLabel}>vs Last Month</Text>
+                  <Text style={styles.statValue}>{selectedCategory.percentage}%</Text>
+                  <Text style={styles.statLabel}>of Total Spending</Text>
                 </View>
               </View>
 
-              <View style={styles.transactionsList}>
-                <Text style={styles.transactionsTitle}>Recent Transactions</Text>
-                {selectedCategory.recentTransactions.map((transaction, index) => (
-                  <View key={index} style={styles.transactionItem}>
-                    <View>
-                      <Text style={styles.transactionMerchant}>{transaction.merchant}</Text>
-                      <Text style={styles.transactionDate}>{formatDate(transaction.date)}</Text>
+              <View style={styles.recentTransactionsSection}>
+                <Text style={styles.sectionTitle}>Recent Transactions</Text>
+                {selectedCategory.recentTransactions.map((transaction) => (
+                  <View key={transaction.id} style={styles.transactionItem}>
+                    <View style={styles.transactionLeft}>
+                      <Text style={styles.transactionDescription} numberOfLines={1}>
+                        {transaction.description}
+                      </Text>
+                      <Text style={styles.transactionDate}>
+                        {formatDate(transaction.posted_date)}
+                      </Text>
                     </View>
                     <Text style={styles.transactionAmount}>
-                      {formatCurrency(transaction.amount)}
+                      {formatCurrency(Math.abs(transaction.amount))}
                     </Text>
                   </View>
                 ))}
@@ -247,42 +336,6 @@ export default function CategoriesScreen() {
           </View>
         </Modal>
       )}
-
-      {/* Why Spike Modal */}
-      <Modal
-        visible={showWhyModal}
-        animationType="fade"
-        transparent={true}
-      >
-        <View style={styles.overlayContainer}>
-          <View style={styles.whyModal}>
-            <Text style={styles.whyModalTitle}>Why did you spend more on dining out this week?</Text>
-            <Text style={styles.whyModalSubtitle}>
-              Help us understand your spending patterns to provide better insights.
-            </Text>
-
-            <View style={styles.reasonsList}>
-              {spikeReasons.map((reason, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.reasonButton}
-                  onPress={() => handleSpikeReasonSubmit(reason)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.reasonText}>{reason}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={styles.skipReasonButton}
-              onPress={() => setShowWhyModal(false)}
-            >
-              <Text style={styles.skipReasonText}>Skip for now</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -290,41 +343,90 @@ export default function CategoriesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827', // Dark background
+    backgroundColor: '#111827',
   },
   header: {
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 24,
-    backgroundColor: '#1F2937', // Slightly lighter dark shade for header
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F9FAFB', // Light text
+    color: '#F9FAFB',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#9CA3AF', // Lighter grey
+    color: '#9CA3AF',
+    marginBottom: 8,
+  },
+  totalSpending: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#34D399',
   },
   content: {
     flex: 1,
     padding: 20,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#9CA3AF',
+    marginTop: 12,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 16,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#34D399',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#111827',
+    fontWeight: '600',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
   categoriesList: {
     marginBottom: 20,
   },
   categoryCard: {
-    backgroundColor: '#1F2937', // Dark card background
+    backgroundColor: '#1F2937',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#374151',
-  },
-  categoryCardAlert: {
-    borderColor: 'rgba(245, 158, 11, 0.5)',
   },
   categoryHeader: {
     flexDirection: 'row',
@@ -353,12 +455,23 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F9FAFB', // Light text
+    color: '#F9FAFB',
     marginRight: 8,
+  },
+  rankBadge: {
+    backgroundColor: '#374151',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  rankText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9CA3AF',
   },
   categoryTransactions: {
     fontSize: 14,
-    color: '#9CA3AF', // Lighter grey
+    color: '#9CA3AF',
   },
   categoryRight: {
     alignItems: 'flex-end',
@@ -366,83 +479,43 @@ const styles = StyleSheet.create({
   categoryAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#F9FAFB', // Light text
+    color: '#F9FAFB',
     marginBottom: 4,
   },
-  trendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  trendText: {
+  percentageText: {
     fontSize: 12,
-    fontWeight: '500',
-    marginLeft: 4,
-  },
-  spikeAlert: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  spikeAlertText: {
-    fontSize: 12,
-    color: '#FBBF24', // Brighter yellow
-    flex: 1,
-  },
-  whyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  whyButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#FBBF24', // Brighter yellow
-    marginLeft: 4,
+    color: '#9CA3AF',
   },
   progressBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginTop: 8,
   },
   progressBar: {
-    flex: 1,
     height: 6,
-    backgroundColor: '#374151', // Darker grey for progress bar background
+    backgroundColor: '#374151',
     borderRadius: 3,
-    marginRight: 12,
+    overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: 3,
   },
-  progressText: {
-    fontSize: 12,
-    color: '#9CA3AF', // Lighter grey
-    minWidth: 80,
-    textAlign: 'right',
-  },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#111827', // Dark background for modal
+    backgroundColor: '#111827',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 20,
     paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#374151',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#F9FAFB', // Light text
+    color: '#F9FAFB',
   },
   closeButton: {
     padding: 8,
@@ -454,8 +527,8 @@ const styles = StyleSheet.create({
   modalStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#1F2937', // Darker card
-    borderRadius: 12,
+    backgroundColor: '#1F2937',
+    borderRadius: 16,
     padding: 20,
     marginBottom: 24,
   },
@@ -463,24 +536,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#F9FAFB', // Light text
+    color: '#F9FAFB',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#9CA3AF', // Lighter grey
+    color: '#9CA3AF',
   },
-  transactionsList: {
-    backgroundColor: '#1F2937', // Darker card
-    borderRadius: 12,
-    padding: 16,
+  recentTransactionsSection: {
+    marginBottom: 20,
   },
-  transactionsTitle: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: '600',
-    color: '#F9FAFB', // Light text
+    color: '#F9FAFB',
     marginBottom: 16,
   },
   transactionItem: {
@@ -491,72 +562,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#374151',
   },
-  transactionMerchant: {
+  transactionLeft: {
+    flex: 1,
+  },
+  transactionDescription: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#F9FAFB', // Light text
-    marginBottom: 2,
+    color: '#F9FAFB',
+    marginBottom: 4,
   },
   transactionDate: {
     fontSize: 12,
-    color: '#9CA3AF', // Lighter grey
+    color: '#9CA3AF',
   },
   transactionAmount: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#F9FAFB', // Light text
-  },
-  overlayContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  whyModal: {
-    backgroundColor: '#1F2937', // Dark modal
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
-  },
-  whyModalTitle: {
-    fontSize: 18,
     fontWeight: '600',
-    color: '#F9FAFB', // Light text
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  whyModalSubtitle: {
-    fontSize: 14,
-    color: '#9CA3AF', // Lighter grey
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  reasonsList: {
-    marginBottom: 20,
-  },
-  reasonButton: {
-    backgroundColor: '#374151', // Darker button
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#4B5563',
-  },
-  reasonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#F9FAFB', // Light text
-    textAlign: 'center',
-  },
-  skipReasonButton: {
-    padding: 12,
-    alignItems: 'center',
-  },
-  skipReasonText: {
-    fontSize: 14,
-    color: '#6B7280', // Darker grey
+    color: '#F9FAFB',
   },
 });

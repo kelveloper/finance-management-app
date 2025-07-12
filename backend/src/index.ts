@@ -429,7 +429,7 @@ app.get('/api/data', (async (req: Request, res: Response) => {
     }
 }) as express.RequestHandler);
 
-// Updates the category for a specific transaction.
+// Updates the category for a specific transaction with AI learning
 app.patch('/api/transactions/:transactionId', (async (req: Request, res: Response) => {
     const { transactionId } = req.params;
     const { category, subcategory } = req.body;
@@ -441,20 +441,419 @@ app.patch('/api/transactions/:transactionId', (async (req: Request, res: Respons
     }
 
     try {
-        const { error } = await supabase
-            .from('transactions')
-            .update({ 
-                category,
-                subcategory: subcategory || null
-            })
-            .eq('id', transactionId)
-            .eq('user_id', userId);
-
-        if (error) throw error;
-        res.json({ message: 'Transaction category and subcategory updated successfully.' });
+        // Use AI learning to update this transaction and all similar ones
+        const learningResult = await learnFromUserFeedback(transactionId, category, subcategory);
+        
+        if (learningResult.success) {
+            res.json({ 
+                message: 'Transaction category updated with AI learning.',
+                similarUpdated: learningResult.similarUpdated,
+                patternLearned: learningResult.patternLearned,
+                totalUpdated: learningResult.similarUpdated + 1
+            });
+        } else {
+            res.status(500).json({ error: 'Failed to update transaction with AI learning.' });
+        }
     } catch (error: any) {
         console.error('Error updating transaction:', error);
         res.status(500).json({ error: 'Failed to update transaction.' });
+    }
+}) as express.RequestHandler);
+
+// Smart merchant pattern extraction for better transaction matching
+function extractSmartMerchantPatterns(description: string): string[] {
+    const patterns: string[] = [];
+    const normalized = description.toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').trim();
+    
+    // Known merchant patterns with their variations (case-insensitive)
+    const merchantPatterns = {
+        'COINBASE': /\bCOINBASE\b/i,
+        'STARBUCKS': /\bSTARBUCKS\b|\bSBX\b/i,
+        'MCDONALD': /\bMCDONALD\b|\bMCD\b|\bMCDONALDS\b/i,
+        'UBER': /\bUBER\b(?!.*EATS)/i, // Uber but not Uber Eats
+        'UBER EATS': /\bUBER.*EATS\b|\bUBEREATS\b/i,
+        'AMAZON': /\bAMAZON\b|\bAMZN\b/i,
+        'APPLE': /\bAPPLE\b|\bAPL\b/i,
+        'NETFLIX': /\bNETFLIX\b|\bNFLX\b/i,
+        'SPOTIFY': /\bSPOTIFY\b|\bSPOT\b/i,
+        'PAYPAL': /\bPAYPAL\b|\bPP\*/i,
+        'VENMO': /\bVENMO\b|\bVEN\b/i,
+        'GRUBHUB': /\bGRUBHUB\b|\bGH\b/i,
+        'DOORDASH': /\bDOORDASH\b|\bDD\b/i,
+        'CVS': /\bCVS\b/i,
+        'WALGREENS': /\bWALGREENS\b|\bWAG\b/i,
+        'TARGET': /\bTARGET\b|\bTGT\b/i,
+        'WALMART': /\bWALMART\b|\bWMT\b/i,
+        'COSTCO': /\bCOSTCO\b|\bCSTCO\b/i,
+        'FRESH & CO': /\bFRESH.*CO\b|\bFRESH&CO\b|\bFRESHANDCO\b/i,
+        'SHELL': /\bSHELL\b|\bSHL\b/i,
+        'EXXON': /\bEXXON\b|\bEXX\b/i,
+        'CHASE': /\bCHASE\b|\bCHS\b/i,
+        'BANK OF AMERICA': /\bBANK.*OF.*AMERICA\b|\bBOA\b/i,
+        'WELLS FARGO': /\bWELLS.*FARGO\b|\bWF\b/i,
+        'ZELLE': /\bZELLE\b|\bZEL\b/i,
+        'DIRECT DEPOSIT': /\bDIRECT.*DEP\b|\bDIR.*DEP\b/i,
+        'ATM': /\bATM\b|\bWITHDRAWAL\b/i
+    };
+    
+    // Check for known merchants first (these are high-confidence patterns)
+    for (const [merchant, pattern] of Object.entries(merchantPatterns)) {
+        if (pattern.test(description)) {
+            patterns.push(merchant);
+        }
+    }
+    
+    // If no known merchant found, extract the most likely merchant name using intelligent extraction
+    if (patterns.length === 0) {
+        const merchantName = extractPrimaryMerchantName(description);
+        if (merchantName) {
+            patterns.push(merchantName);
+        }
+    }
+    
+    console.log(`🔍 Smart pattern extraction for "${description}":`, patterns);
+    return patterns;
+}
+
+// Extract the primary merchant name from description with aggressive noise filtering
+function extractPrimaryMerchantName(description: string): string | null {
+    const normalized = description.toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').trim();
+    
+    // Aggressive noise filtering - remove all common noise patterns
+    const cleanedDescription = normalized
+        // Remove URLs and web-related terms
+        .replace(/\bHTTPS?\b/g, '')
+        .replace(/\bWWW\b/g, '')
+        .replace(/\b(COM|NET|ORG)\b/g, '')
+        .replace(/\bWEB\s*ID\b/g, '')
+        
+        // Remove transaction IDs and reference numbers (more aggressive)
+        .replace(/\b[A-Z0-9]{6,}\b/g, '') // Remove long alphanumeric strings (6+ chars)
+        .replace(/\b\d{6,}\b/g, '') // Remove long numbers
+        .replace(/\b[A-Z]{2}\d{6,}\b/g, '') // Remove patterns like XX123456
+        .replace(/\b\d{2}[A-Z]{2}\d{2,}\b/g, '') // Remove patterns like 12XX34
+        
+        // Remove dates and times
+        .replace(/\b\d{2}\/\d{2}\/?\d{0,4}\b/g, '') // Remove dates like 05/20 or 05/20/2025
+        .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, '') // Remove times
+        
+        // Remove transaction types and common banking terms
+        .replace(/\b(DEBIT|CREDIT|PURCHASE|PAYMENT|TRANSFER|WITHDRAWAL|DEPOSIT)\b/g, '')
+        .replace(/\b(CARD|ENDING|IN|AT|ON|FROM|TO|FOR|WITH)\b/g, '')
+        .replace(/\b(ONLINE|MOBILE|POS|TERMINAL|MERCHANT)\b/g, '')
+        
+        // Remove state codes and common location indicators
+        .replace(/\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\b/g, '')
+        
+        // Remove common noise words
+        .replace(/\b(THE|AND|FOR|WITH|FROM|SEC|INC|LLC|CORP|CO|LTD)\b/g, '')
+        
+        // Normalize spaces
+        .replace(/\s+/g, ' ')
+        .trim();
+    
+    // Split into words and filter meaningful ones
+    const words = cleanedDescription.split(/\s+/).filter((word: string) => 
+        word.length > 2 && 
+        !word.match(/^\d+$/) && // Skip pure numbers
+        !word.match(/^[A-Z]{1,2}$/) // Skip single/double letters
+    );
+    
+    // Return the first meaningful word as the merchant name
+    return words.length > 0 ? words[0] : null;
+}
+
+// Smart transaction similarity checker with enhanced pattern matching
+function isTransactionSimilar(originalDescription: string, compareDescription: string, patterns: string[]): boolean {
+    // Extract merchant names for both descriptions
+    const originalMerchant = extractMerchantName(originalDescription);
+    const compareMerchant = extractMerchantName(compareDescription);
+    
+    // If merchant names are the same, they're similar (high confidence)
+    if (originalMerchant && compareMerchant && originalMerchant === compareMerchant) {
+        return true;
+    }
+    
+    // Check if any of the extracted patterns match the compare description using word boundaries
+    for (const pattern of patterns) {
+        // Use word boundary matching to avoid partial matches like "COM" matching "COMPANY"
+        const patternRegex = new RegExp(`\\b${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        if (patternRegex.test(compareDescription)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Extract the main merchant name from a transaction description with enhanced patterns
+function extractMerchantName(description: string): string | null {
+    // Enhanced known merchant patterns (case-insensitive with word boundaries)
+    const merchantPatterns = {
+        'COINBASE': /\bCOINBASE\b/i,
+        'STARBUCKS': /\bSTARBUCKS\b/i,
+        'MCDONALD': /\bMCDONALD\b/i,
+        'UBER': /\bUBER\b/i,
+        'AMAZON': /\bAMAZON\b/i,
+        'APPLE': /\bAPPLE\b/i,
+        'NETFLIX': /\bNETFLIX\b/i,
+        'SPOTIFY': /\bSPOTIFY\b/i,
+        'PAYPAL': /\bPAYPAL\b/i,
+        'VENMO': /\bVENMO\b/i,
+        'GRUBHUB': /\bGRUBHUB\b/i,
+        'DOORDASH': /\bDOORDASH\b/i,
+        'CVS': /\bCVS\b/i,
+        'WALGREENS': /\bWALGREENS\b/i,
+        'TARGET': /\bTARGET\b/i,
+        'WALMART': /\bWALMART\b/i,
+        'COSTCO': /\bCOSTCO\b/i,
+        'FRESH & CO': /\bFRESH.*CO\b/i
+    };
+    
+    // Check for known merchants first
+    for (const [merchant, pattern] of Object.entries(merchantPatterns)) {
+        if (pattern.test(description)) {
+            return merchant;
+        }
+    }
+    
+    // If no known merchant, use the enhanced primary merchant name extraction
+    return extractPrimaryMerchantName(description);
+}
+
+// NEW: Preview similar transactions that would be updated
+app.get('/api/transactions/:transactionId/preview-similar', (async (req: Request, res: Response) => {
+    const { transactionId } = req.params;
+    const { category, subcategory } = req.query;
+    const userId = req.headers['x-user-id'] as string || 'dev_user_2025';
+
+    if (!category) {
+        res.status(400).json({ error: 'Category is required for preview.' });
+        return;
+    }
+
+    try {
+        // Get the original transaction
+        const { data: transaction, error: fetchError } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('id', transactionId)
+            .single();
+
+        if (fetchError || !transaction) {
+            res.status(404).json({ error: 'Transaction not found.' });
+            return;
+        }
+
+        // Extract patterns from the transaction description using smart merchant detection
+        const patterns = extractSmartMerchantPatterns(transaction.description);
+        const uniquePatterns = [...new Set(patterns)].slice(0, 5);
+
+        // Find all similar transactions
+        const { data: allTransactions, error: similarError } = await supabase
+            .from('transactions')
+            .select('*')
+            .neq('id', transactionId)
+            .eq('user_id', userId);
+
+        if (similarError || !allTransactions) {
+            res.status(500).json({ error: 'Failed to fetch similar transactions.' });
+            return;
+        }
+
+        // Filter for matching transactions using smart matching
+        const matchingTransactions = allTransactions.filter(t => {
+            return isTransactionSimilar(transaction.description, t.description, uniquePatterns);
+        });
+
+        const similarTransactions = matchingTransactions.filter(t => {
+            // Check if transaction is already in the correct category
+            const alreadyCorrectCategory = t.category === category;
+            const alreadyCorrectSubcategory = subcategory ? 
+                t.subcategory === subcategory : 
+                !t.subcategory || t.subcategory === null;
+            
+            const isAlreadyCorrect = alreadyCorrectCategory && alreadyCorrectSubcategory;
+            
+            // Only include if it's not already correctly categorized
+            return !isAlreadyCorrect;
+        });
+
+        console.log(`🔍 Preview filtering results:`);
+        console.log(`  📊 Total matching transactions: ${matchingTransactions.length}`);
+        console.log(`  ✅ Already correctly categorized: ${matchingTransactions.length - similarTransactions.length}`);
+        console.log(`  📋 Transactions to show in preview: ${similarTransactions.length}`);
+        console.log(`  🎯 Target category: ${category}${subcategory ? ` > ${subcategory}` : ''}`);
+        
+        if (matchingTransactions.length > similarTransactions.length) {
+            const alreadyCorrect = matchingTransactions.filter(t => {
+                const alreadyCorrectCategory = t.category === category;
+                const alreadyCorrectSubcategory = subcategory ? 
+                    t.subcategory === subcategory : 
+                    !t.subcategory || t.subcategory === null;
+                return alreadyCorrectCategory && alreadyCorrectSubcategory;
+            });
+            console.log(`  📝 Already correct transactions:`, alreadyCorrect.map(t => ({
+                id: t.id,
+                description: t.description.substring(0, 50) + '...',
+                category: t.category,
+                subcategory: t.subcategory
+            })));
+        }
+
+        res.json({
+            originalTransaction: transaction,
+            patterns: uniquePatterns,
+            similarTransactions: similarTransactions.map(t => ({
+                id: t.id,
+                description: t.description,
+                amount: t.amount,
+                posted_date: t.posted_date,
+                category: t.category,
+                subcategory: t.subcategory,
+                matchingPatterns: uniquePatterns.filter(pattern => 
+                    t.description.toUpperCase().includes(pattern)
+                )
+            })),
+            proposedCategory: category,
+            proposedSubcategory: subcategory || null,
+            totalCount: similarTransactions.length
+        });
+
+    } catch (error: any) {
+        console.error('Error previewing similar transactions:', error);
+        res.status(500).json({ error: 'Failed to preview similar transactions.' });
+    }
+}) as express.RequestHandler);
+
+// NEW: Update selected transactions after preview confirmation
+app.patch('/api/transactions-bulk/update-selected', (async (req: Request, res: Response) => {
+    const { transactionIds, category, subcategory } = req.body;
+    const userId = req.headers['x-user-id'] as string || 'dev_user_2025';
+
+    if (!transactionIds || !Array.isArray(transactionIds) || transactionIds.length === 0) {
+        res.status(400).json({ error: 'Transaction IDs array is required.' });
+        return;
+    }
+
+    if (!category) {
+        res.status(400).json({ error: 'Category is required.' });
+        return;
+    }
+
+    try {
+        // Update all selected transactions
+        const { error: updateError } = await supabase
+            .from('transactions')
+            .update({ 
+                category: category,
+                subcategory: subcategory || null
+            })
+            .in('id', transactionIds)
+            .eq('user_id', userId);
+
+        if (updateError) {
+            throw updateError;
+        }
+
+        // Store learning patterns for each transaction
+        const { data: updatedTransactions, error: fetchError } = await supabase
+            .from('transactions')
+            .select('*')
+            .in('id', transactionIds)
+            .eq('user_id', userId);
+
+        if (fetchError) {
+            throw fetchError;
+        }
+
+        // Store AI learning patterns
+        for (const transaction of updatedTransactions || []) {
+            try {
+                const description = transaction.description.toUpperCase();
+                const patterns: string[] = [];
+                const normalized = description.replace(/[^A-Z0-9\s]/g, ' ').trim();
+                const words = normalized.split(/\s+/).filter((word: string) => 
+                    word.length > 2 && 
+                    !['THE', 'AND', 'FOR', 'WITH', 'FROM', 'PURCHASE', 'DEBIT', 'CREDIT'].includes(word)
+                );
+                
+                if (words.length > 0) {
+                    patterns.push(words[0]);
+                }
+
+                if (patterns.length > 0) {
+                    await supabase
+                        .from('ai_learned_patterns')
+                        .upsert({
+                            pattern: patterns[0],
+                            category: category,
+                            subcategory: subcategory || null,
+                            confidence: 0.9,
+                            occurrences: 1,
+                            created_at: new Date().toISOString(),
+                            last_seen: new Date().toISOString()
+                        });
+                }
+            } catch (patternError) {
+                console.log('Note: Could not store AI learning pattern for transaction', transaction.id);
+            }
+        }
+
+        res.json({
+            message: 'Selected transactions updated successfully.',
+            updatedCount: transactionIds.length,
+            updatedTransactions: updatedTransactions
+        });
+
+    } catch (error: any) {
+        console.error('Error updating selected transactions:', error);
+        res.status(500).json({ error: 'Failed to update selected transactions.' });
+    }
+}) as express.RequestHandler);
+
+// NEW: Learn from negative feedback (deselected transactions in preview)
+app.post('/api/transactions/learn-negative', (async (req: Request, res: Response) => {
+    const { selectedTransactionId, deselectedTransactionIds, category, subcategory } = req.body;
+    const userId = req.headers['x-user-id'] as string || 'dev_user_2025';
+
+    if (!selectedTransactionId) {
+        res.status(400).json({ error: 'Selected transaction ID is required.' });
+        return;
+    }
+
+    if (!deselectedTransactionIds || !Array.isArray(deselectedTransactionIds) || deselectedTransactionIds.length === 0) {
+        res.status(400).json({ error: 'Deselected transaction IDs array is required.' });
+        return;
+    }
+
+    if (!category) {
+        res.status(400).json({ error: 'Category is required.' });
+        return;
+    }
+
+    try {
+        // Import the negative learning function
+        const { learnFromNegativeFeedback } = await import('./categorize-transactions');
+        
+        // Learn from the deselected transactions
+        const result = await learnFromNegativeFeedback(
+            selectedTransactionId,
+            deselectedTransactionIds,
+            category,
+            subcategory
+        );
+
+        res.json({
+            message: 'Negative learning completed successfully.',
+            success: result.success,
+            patternsLearned: result.patternsLearned,
+            deselectedCount: deselectedTransactionIds.length
+        });
+
+    } catch (error: any) {
+        console.error('Error learning from negative feedback:', error);
+        res.status(500).json({ error: 'Failed to learn from negative feedback.' });
     }
 }) as express.RequestHandler);
 
