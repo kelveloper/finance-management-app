@@ -272,9 +272,6 @@ export default function HomeScreen() {
                     <View style={styles.personalizedHeader}>
                       <Text style={styles.personalizedTitle}>{insight.title}</Text>
                       <View style={styles.headerRight}>
-                        <Text style={styles.confidenceScore}>
-                          {Math.round(insight.confidence_score * 100)}% confident
-                        </Text>
                         <Text style={styles.expandIcon}>
                           {isExpanded ? '▼' : '▶'}
                         </Text>
@@ -621,7 +618,7 @@ const styles = StyleSheet.create({
     color: '#F9FAFB', // White text for greeting
   },
   greetingName: {
-    fontSize: 44,
+    fontSize: 48,
     fontWeight: 'bold',
     color: '#34D399', // Green for name and exclamation
   },
