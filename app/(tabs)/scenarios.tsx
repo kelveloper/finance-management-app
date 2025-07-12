@@ -464,19 +464,18 @@ const styles = StyleSheet.create({
   },
   currentStateTitle: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#34D399', // Bright green
     marginBottom: 8,
   },
   currentStateAmount: {
     fontSize: 32,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   currentStateSubtitle: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   section: {
@@ -484,7 +483,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 16,
   },
@@ -512,13 +511,12 @@ const styles = StyleSheet.create({
   },
   scenarioTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   scenarioDescription: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     lineHeight: 20,
   },
@@ -529,7 +527,7 @@ const styles = StyleSheet.create({
   },
   inputCardTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 16,
   },
@@ -538,7 +536,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#F9FAFB', // Light text
     marginBottom: 8,
   },
@@ -556,7 +554,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingLeft: 8,
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#F9FAFB', // Light text
   },
   textInputFull: {
@@ -564,7 +561,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#F9FAFB', // Light text
     borderWidth: 1,
     borderColor: '#374151',
@@ -577,7 +573,6 @@ const styles = StyleSheet.create({
   },
   taxNoteText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#60A5FA', // Light blue
   },
   resultCard: {
@@ -601,12 +596,12 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
   },
   resultAmount: {
     fontSize: 20,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
   },
   spendableComparison: {
     flexDirection: 'row',
@@ -620,13 +615,12 @@ const styles = StyleSheet.create({
   },
   comparisonLabel: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     marginBottom: 4,
   },
   comparisonValue: {
     fontSize: 16,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
   },
   comparisonArrow: {
@@ -639,7 +633,6 @@ const styles = StyleSheet.create({
   },
   impactSummaryText: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#E5E7EB', // Off-white
     textAlign: 'center',
     lineHeight: 20,
@@ -657,7 +650,6 @@ const styles = StyleSheet.create({
   },
   chartDescription: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     marginBottom: 16,
     lineHeight: 20,
@@ -687,7 +679,6 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   projectionNote: {
@@ -697,7 +688,6 @@ const styles = StyleSheet.create({
   },
   projectionNoteText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#60A5FA', // Light blue
     textAlign: 'center',
     lineHeight: 16,

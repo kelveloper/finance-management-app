@@ -603,13 +603,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   content: {
@@ -627,12 +626,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
   },
   sectionSubtitle: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     marginTop: 2,
   },
@@ -650,7 +648,7 @@ const styles = StyleSheet.create({
   },
   templateButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#F59E0B', // Amber
     marginLeft: 4,
   },
@@ -664,7 +662,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#34D399', // Bright green
     marginLeft: 4,
   },
@@ -678,7 +676,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#60A5FA', // Light blue
     marginLeft: 4,
   },
@@ -691,7 +689,6 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#F9FAFB', // Light text
     minHeight: 200,
     lineHeight: 24,
@@ -704,7 +701,7 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 16,
   },
@@ -729,7 +726,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#9CA3AF', // Lighter grey
     marginLeft: 4,
   },
@@ -746,7 +743,7 @@ const styles = StyleSheet.create({
   },
   formLabel: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#F9FAFB', // Light text
     marginBottom: 8,
   },
@@ -755,7 +752,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#F9FAFB', // Light text
     borderWidth: 1,
     borderColor: '#374151',
@@ -774,7 +770,6 @@ const styles = StyleSheet.create({
     padding: 12,
     paddingLeft: 8,
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#F9FAFB', // Light text
   },
   formActions: {
@@ -789,7 +784,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#9CA3AF', // Lighter grey
   },
   addAdjustmentButton: {
@@ -800,7 +795,7 @@ const styles = StyleSheet.create({
   },
   addAdjustmentButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#FFFFFF',
   },
   adjustmentsList: {
@@ -834,13 +829,12 @@ const styles = StyleSheet.create({
   },
   adjustmentCategory: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 2,
   },
   adjustmentDuration: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   deleteButton: {
@@ -853,13 +847,12 @@ const styles = StyleSheet.create({
   },
   adjustmentReasonLabel: {
     fontSize: 12,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#9CA3AF', // Lighter grey
     marginBottom: 4,
   },
   adjustmentReasonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#E5E7EB', // Off-white
     lineHeight: 20,
   },
@@ -869,14 +862,13 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#6B7280', // Darker grey
     marginTop: 12,
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#6B7280', // Darker grey
     textAlign: 'center',
     lineHeight: 20,
@@ -895,7 +887,7 @@ const styles = StyleSheet.create({
   },
   quickActionText: {
     fontSize: 16,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#F9FAFB', // Light text
     marginLeft: 12,
   },
@@ -913,7 +905,6 @@ const styles = StyleSheet.create({
   },
   autoSaveText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#64748B',
     marginLeft: 6,
   },
@@ -925,7 +916,7 @@ const styles = StyleSheet.create({
   },
   templatesTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB',
     marginBottom: 12,
   },
@@ -941,13 +932,12 @@ const styles = StyleSheet.create({
   },
   templateCardTitle: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#F59E0B',
     marginBottom: 4,
   },
   templateCardPreview: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF',
     lineHeight: 16,
   },
@@ -966,26 +956,24 @@ const styles = StyleSheet.create({
   },
   suggestionTitle: {
     fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F59E0B',
     marginLeft: 8,
   },
   suggestionText: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#E5E7EB',
     lineHeight: 20,
   },
   adjustmentsListTitle: {
     fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB',
     marginBottom: 12,
     paddingLeft: 4,
   },
   adjustmentExpiry: {
     fontSize: 11,
-    fontFamily: 'Inter-Regular',
     color: '#64748B',
     marginTop: 2,
   },
