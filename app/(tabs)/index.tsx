@@ -1,5 +1,5 @@
 import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, Platform, Alert } from 'react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import moment from 'moment';
 import { useQuery } from '@tanstack/react-query';
 import { Transaction, Insight, RecurringTransaction, PersonalizedInsight, SmartGoalSuggestion } from '../../../common/types';
@@ -31,6 +31,8 @@ const getTimeBasedGreeting = (firstName: string | null): string => {
 
 export default function HomeScreen() {
   const { userId, firstName } = useSession();
+  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
+  
   const { 
     data, 
     isLoading, 
@@ -63,6 +65,18 @@ export default function HomeScreen() {
   const recurring = data?.insights?.recurring ?? [];
   const personalizedInsights = data?.insights?.personalized ?? [];
   const smartGoals = data?.insights?.smartGoals ?? [];
+
+  const toggleInsightExpansion = (insightId: string) => {
+    setExpandedInsights(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(insightId)) {
+        newSet.delete(insightId);
+      } else {
+        newSet.add(insightId);
+      }
+      return newSet;
+    });
+  };
 
   const handleUpdateCategory = (transaction: Transaction) => {
     const onConfirm = (newCategory?: string) => {
@@ -248,25 +262,43 @@ export default function HomeScreen() {
           {personalizedInsights.length > 0 && (
             <View style={styles.personalizedContainer}>
               <Text style={styles.insightsTitle}>🧠 Personal AI Insights</Text>
-              {personalizedInsights.map((insight) => (
-                <View key={insight.id} style={[styles.insightCard, styles.personalizedCard]}>
-                  <View style={styles.personalizedHeader}>
-                    <Text style={styles.personalizedTitle}>{insight.title}</Text>
-                    <Text style={styles.confidenceScore}>
-                      {Math.round(insight.confidence_score * 100)}% confident
-                    </Text>
-                  </View>
-                  <Text style={styles.personalizedMessage}>{insight.message}</Text>
-                  {insight.actionable_advice.length > 0 && (
-                    <View style={styles.adviceContainer}>
-                      <Text style={styles.adviceTitle}>💡 Actions you can take:</Text>
-                      {insight.actionable_advice.map((advice, index) => (
-                        <Text key={index} style={styles.adviceItem}>• {advice}</Text>
-                      ))}
+              {personalizedInsights.map((insight) => {
+                const isExpanded = expandedInsights.has(insight.id);
+                return (
+                  <TouchableOpacity
+                    key={insight.id}
+                    style={[styles.insightCard, styles.personalizedCard]}
+                    onPress={() => toggleInsightExpansion(insight.id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.personalizedHeader}>
+                      <Text style={styles.personalizedTitle}>{insight.title}</Text>
+                      <View style={styles.headerRight}>
+                        <Text style={styles.confidenceScore}>
+                          {Math.round(insight.confidence_score * 100)}% confident
+                        </Text>
+                        <Text style={styles.expandIcon}>
+                          {isExpanded ? '▼' : '▶'}
+                        </Text>
+                      </View>
                     </View>
-                  )}
-                </View>
-              ))}
+                    <Text style={styles.personalizedMessage}>{insight.message}</Text>
+                    {insight.actionable_advice.length > 0 && (
+                      <Text style={styles.tapToExpand}>
+                        {isExpanded ? 'Tap to hide actions' : 'Tap to see actions you can take'}
+                      </Text>
+                    )}
+                    {isExpanded && insight.actionable_advice.length > 0 && (
+                      <View style={styles.adviceContainer}>
+                        <Text style={styles.adviceTitle}>💡 Actions you can take:</Text>
+                        {insight.actionable_advice.map((advice, index) => (
+                          <Text key={index} style={styles.adviceItem}>• {advice}</Text>
+                        ))}
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
 
@@ -488,6 +520,10 @@ const styles = StyleSheet.create({
     color: '#C4B5FD', // Light purple
     flex: 1,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   confidenceScore: {
     fontSize: 12,
     color: '#A78BFA',
@@ -495,6 +531,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    marginRight: 8,
+  },
+  expandIcon: {
+    fontSize: 14,
+    color: '#C4B5FD',
+    fontWeight: 'bold',
+  },
+  tapToExpand: {
+    fontSize: 12,
+    color: '#A78BFA',
+    fontStyle: 'italic',
+    marginTop: 4,
+    textAlign: 'center',
   },
   personalizedMessage: {
     fontSize: 14,
