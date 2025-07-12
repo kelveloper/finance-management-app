@@ -976,4 +976,65 @@ Development → Production deployment without safety testing can break live apps
 - Staging uses sandbox Plaid (safe bank simulation)
 - Production uses real Plaid (actual bank connections)
 - Separate databases prevent test data from affecting real users
-- Environment isolation ensures compliance and security 
+- Environment isolation ensures compliance and security
+
+---
+
+## 4. Environment-Specific Welcome Screen Behavior
+
+**Date:** January 2025
+
+### The Problem
+Finance apps need different user experiences in development vs production. Developers want fast iteration, but real users need proper onboarding.
+
+### Solution
+**Environment-aware welcome screen behavior:**
+
+1. **Development Environment:**
+   - Auto-checks for existing data
+   - Skips welcome screen if data found
+   - Faster development cycle
+
+2. **Staging/Production Environment:**
+   - Always shows welcome screen first
+   - Forces users through onboarding flow
+   - Professional user experience
+
+3. **Technical Implementation:**
+   ```typescript
+   // Environment detection
+   export function getCurrentEnvironment(): Environment {
+     if (__DEV__) return 'development';
+     // Check release channels and environment variables
+   }
+   
+   // Welcome screen logic
+   if (!isDevEnvironment) {
+     // In staging/production, always show welcome
+     setIsLoading(false);
+     return;
+   }
+   ```
+
+**Benefits Achieved:**
+- **Developer Experience:** Fast iteration in development
+- **User Experience:** Proper onboarding in production
+- **Testing Quality:** Realistic user flows in staging
+- **Professional Polish:** Consistent first impressions
+
+**Implementation Files:**
+- `utils/environment.ts` - Environment detection utility
+- `app/_layout.tsx` - Environment-aware routing
+- `app/onboarding/welcome.tsx` - Conditional welcome behavior
+- `app.json` & `eas.json` - Build configuration
+- `docs/ENVIRONMENT_WELCOME_SCREEN.md` - Complete behavior guide
+
+**Visual Indicators:**
+- Development: No badge, "Checking for existing data..."
+- Staging: "Staging Environment" badge, always shows welcome
+- Production: "Production Environment" badge, always shows welcome
+
+**Use Cases:**
+- Daily development: Fast testing without onboarding
+- Stakeholder demos: Professional user experience
+- Production releases: Consistent user onboarding 

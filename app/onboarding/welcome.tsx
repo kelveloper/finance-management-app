@@ -4,8 +4,8 @@ import { router } from 'expo-router';
 import { Sparkles, Shield, TrendingUp } from 'lucide-react-native';
 import { useSession } from '@/hooks/useSession';
 import React, { useEffect, useState } from 'react';
+import { isDevelopment, getApiUrl, envLog, getEnvironmentDisplayName } from '@/utils/environment';
 
-const API_URL = 'http://127.0.0.1:8000'; // Using the same hardcoded URL as the dashboard
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
@@ -13,26 +13,45 @@ export default function WelcomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const tryStartSession = async () => {
+    const handleWelcomeScreenLogic = async () => {
+      const isDevEnvironment = isDevelopment();
+      const apiUrl = getApiUrl();
+      
+      envLog('Welcome screen loaded', {
+        environment: getEnvironmentDisplayName(),
+        isDevelopment: isDevEnvironment,
+        apiUrl
+      });
+
+      // In staging/production, always show welcome screen
+      if (!isDevEnvironment) {
+        envLog('Production environment - showing welcome screen');
+        setIsLoading(false);
+        return;
+      }
+
+      // In development, try to auto-start session for faster testing
+      envLog('Development environment - attempting auto-session start');
       try {
-        const response = await fetch(`${API_URL}/api/session/start`, {
+        const response = await fetch(`${apiUrl}/api/session/start`, {
           method: 'POST',
         });
         const data = await response.json();
         if (response.ok && data.accessToken) {
+          envLog('Auto-session start successful, redirecting to dashboard');
           await setAccessToken(data.accessToken);
           router.replace('/(tabs)');
         } else {
-          // No data found on the backend, so we'll show the welcome screen.
+          envLog('No existing data found, showing welcome screen');
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('Failed to start session automatically', error);
+        envLog('Failed to start session automatically', error);
         setIsLoading(false); // Show the welcome screen on error
       }
     };
 
-    tryStartSession();
+    handleWelcomeScreenLogic();
   }, [setAccessToken, router]);
 
 
@@ -40,7 +59,12 @@ export default function WelcomeScreen() {
     return (
       <LinearGradient colors={['#0F172A', '#1E293B']} style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FFFFFF" />
-        <Text style={styles.loadingText}>Checking for existing data...</Text>
+        <Text style={styles.loadingText}>
+          {isDevelopment() ? 'Checking for existing data...' : 'Loading...'}
+        </Text>
+        <Text style={styles.environmentText}>
+          Environment: {getEnvironmentDisplayName()}
+        </Text>
       </LinearGradient>
     );
   }
@@ -56,10 +80,15 @@ export default function WelcomeScreen() {
             <Sparkles size={48} color="#10B981" />
           </View>
           
-          <Text style={styles.title}>Welcome to{'\n'}EmpowerFlow</Text>
-          <Text style={styles.subtitle}>
-            Your intelligent financial co-pilot that provides proactive insights and personalized advice to empower your financial journey.
+                  <Text style={styles.title}>Welcome to{'\n'}EmpowerFlow</Text>
+        <Text style={styles.subtitle}>
+          Your intelligent financial co-pilot that provides proactive insights and personalized advice to empower your financial journey.
+        </Text>
+        {!isDevelopment() && (
+          <Text style={styles.environmentBadge}>
+            {getEnvironmentDisplayName()} Environment
           </Text>
+        )}
         </View>
 
         <View style={styles.featuresContainer}>
@@ -184,5 +213,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#94A3B8',
+  },
+  environmentText: {
+    marginTop: 10,
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#64748B',
+  },
+  environmentBadge: {
+    marginTop: 16,
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#10B981',
+    textAlign: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'center',
   },
 });
