@@ -332,7 +332,10 @@ function getPlanningHorizon(personality: string): 'short' | 'medium' | 'long' {
 app.get('/api/data', (async (req: Request, res: Response) => {
     // For now, get user ID from header or default to mock user
     // In production, this would come from authenticated JWT token
-    const userId = req.headers['x-user-id'] as string || 'mock_user_123';
+    const requestedUserId = req.headers['x-user-id'] as string || 'mock_user_123';
+    
+    // DEVELOPMENT ONLY: Always use mock_user_123 to see test data
+    const userId = process.env.NODE_ENV === 'development' ? 'mock_user_123' : requestedUserId;
 
     try {
         const { data: transactions, error } = await supabase
