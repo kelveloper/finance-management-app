@@ -7,8 +7,30 @@ import { useSession } from '../../hooks/useSession';
 
 const API_HOST = 'http://127.0.0.1:8000'; // Assuming backend runs locally on port 8000
 
+// Function to get time-based greeting in Eastern Time
+const getTimeBasedGreeting = (firstName: string | null): string => {
+  if (!firstName) return 'Good morning!';
+  
+  // Get current time in Eastern Time
+  const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+  const currentHour = new Date(easternTime).getHours();
+  
+  let greeting = '';
+  if (currentHour >= 5 && currentHour < 12) {
+    greeting = 'Good morning';
+  } else if (currentHour >= 12 && currentHour < 17) {
+    greeting = 'Good afternoon';
+  } else if (currentHour >= 17 && currentHour < 21) {
+    greeting = 'Good evening';
+  } else {
+    greeting = 'Good night';
+  }
+  
+  return `${greeting}, ${firstName}!`;
+};
+
 export default function HomeScreen() {
-  const { userId } = useSession();
+  const { userId, firstName } = useSession();
   const { 
     data, 
     isLoading, 
@@ -196,6 +218,7 @@ export default function HomeScreen() {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={() => (
         <>
+          <Text style={styles.greetingText}>{getTimeBasedGreeting(firstName)}</Text>
           {insights.length > 0 && (
             <View style={styles.insightsContainer}>
               <Text style={styles.insightsTitle}>AI Insights</Text>
@@ -537,5 +560,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#FEF3C7',
     fontStyle: 'italic',
-  }
+  },
+  greetingText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#F9FAFB',
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
 });

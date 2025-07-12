@@ -27,7 +27,7 @@ export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(false); // Default to sign-up for first-time users
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { setAccessToken, setUserId } = useSession();
+  const { setAccessToken, setUserId, setFirstName } = useSession();
 
   // Debug log to see environment and API URL
   React.useEffect(() => {
@@ -102,6 +102,7 @@ export default function AuthScreen() {
       if (response.ok) {
         await setAccessToken(data.accessToken);
         await setUserId(data.user.id);
+        await setFirstName(data.user.firstName);
         
         // Redirect immediately without success alert for better UX
         if (isLogin) {
