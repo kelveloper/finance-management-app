@@ -442,13 +442,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   content: {
