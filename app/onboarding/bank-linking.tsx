@@ -24,10 +24,12 @@ export default function BankLinkingScreen() {
   const { setAccessToken, userId } = useSession();
   const [isCsvUploading, setIsCsvUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleCsvUpload = async () => {
     setIsCsvUploading(true);
     setUploadStatus('Selecting file...');
+    setUploadProgress(0);
     
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -36,7 +38,11 @@ export default function BankLinkingScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
+        
+        // Stage 1: File selected
         setUploadStatus('Uploading transactions...');
+        setUploadProgress(25);
+        await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for visual feedback
         
         const formData = new FormData();
         
@@ -49,7 +55,12 @@ export default function BankLinkingScreen() {
         
         formData.append('file', fileData);
 
+        // Stage 2: Uploading
+        setUploadProgress(50);
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         setUploadStatus('Processing and categorizing...');
+        setUploadProgress(75);
         
         const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/upload-csv`, {
           method: 'POST',
@@ -64,7 +75,10 @@ export default function BankLinkingScreen() {
         const data = await response.json();
 
         if (response.ok && data.accessToken) {
+          // Stage 3: Complete
           setUploadStatus('Complete!');
+          setUploadProgress(100);
+          await new Promise(resolve => setTimeout(resolve, 500)); // Show completion briefly
           
           // Show detailed categorization results
           const message = data.categorization ? 
@@ -89,10 +103,14 @@ export default function BankLinkingScreen() {
     } catch (error: any) {
       console.error('CSV Upload Error:', error);
       setUploadStatus('Error occurred');
+      setUploadProgress(0);
       showAlert('Error', error.message || 'An unexpected error occurred during CSV upload.');
     } finally {
       setIsCsvUploading(false);
-      setTimeout(() => setUploadStatus(''), 1000); // Clear status after a second
+      setTimeout(() => {
+        setUploadStatus('');
+        setUploadProgress(0);
+      }, 1000); // Clear status after a second
     }
   };
 
@@ -114,21 +132,28 @@ export default function BankLinkingScreen() {
           <Text style={styles.supportedFormatsText}>• More banks coming soon!</Text>
         </View>
 
+        {isCsvUploading && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${uploadProgress}%` }]} />
+            </View>
+            <Text style={styles.progressText}>{uploadStatus}</Text>
+            <Text style={styles.progressPercentage}>{uploadProgress}%</Text>
+          </View>
+        )}
+
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, isCsvUploading && styles.buttonDisabled]}
           onPress={handleCsvUpload}
           disabled={isCsvUploading}
         >
-          {isCsvUploading ? (
-            <>
-              <ActivityIndicator color="#FFFFFF" />
-              {uploadStatus && <Text style={styles.statusText}>{uploadStatus}</Text>}
-            </>
-          ) : (
+          {!isCsvUploading ? (
             <>
               <UploadCloud size={20} color="#FFFFFF" style={styles.buttonIcon} />
               <Text style={styles.buttonText}>Upload Transaction CSV</Text>
             </>
+          ) : (
+            <Text style={styles.buttonText}>Processing...</Text>
           )}
         </TouchableOpacity>
 
@@ -195,6 +220,10 @@ const styles = StyleSheet.create({
     }),
     width: '100%',
   },
+  buttonDisabled: {
+    backgroundColor: '#6B7280',
+    opacity: 0.7,
+  },
   buttonIcon: {
     marginRight: 12,
   },
@@ -253,6 +282,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     marginTop: 8,
+    textAlign: 'center',
+  },
+  progressContainer: {
+    width: '100%',
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  progressBar: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#1E293B',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#10B981',
+    borderRadius: 4,
+  },
+  progressText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  progressPercentage: {
+    color: '#10B981',
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
     textAlign: 'center',
   },
 });
