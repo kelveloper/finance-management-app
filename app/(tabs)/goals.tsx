@@ -918,13 +918,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   content: {
@@ -942,7 +941,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
   },
   addButton: {
@@ -955,7 +954,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#34D399', // Bright green
     marginLeft: 4,
   },
@@ -980,7 +979,7 @@ const styles = StyleSheet.create({
   },
   goalName: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 8,
   },
@@ -996,7 +995,6 @@ const styles = StyleSheet.create({
   },
   goalMetaText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     marginRight: 12,
   },
@@ -1005,13 +1003,12 @@ const styles = StyleSheet.create({
   },
   goalProgress: {
     fontSize: 20,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#34D399', // Bright green
     marginBottom: 4,
   },
   goalAmount: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   progressBarContainer: {
@@ -1038,13 +1035,12 @@ const styles = StyleSheet.create({
   },
   contributionText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#34D399', // Bright green
     marginLeft: 4,
   },
   remainingText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   debtsList: {
@@ -1066,12 +1062,12 @@ const styles = StyleSheet.create({
   },
   debtName: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
   },
   debtBalance: {
     fontSize: 20,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#FCA5A5', // Light red
   },
   debtDetails: {
@@ -1084,13 +1080,12 @@ const styles = StyleSheet.create({
   },
   debtDetailLabel: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     marginBottom: 4,
   },
   debtDetailValue: {
     fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
   },
   calculateButton: {
@@ -1102,7 +1097,7 @@ const styles = StyleSheet.create({
   },
   calculateButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#60A5FA', // Light blue
   },
   modalContainer: {
@@ -1121,7 +1116,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
   },
   closeButton: {
@@ -1136,7 +1131,7 @@ const styles = StyleSheet.create({
   },
   formLabel: {
     fontSize: 16,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#F9FAFB', // Light text
     marginBottom: 8,
   },
@@ -1145,7 +1140,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#F9FAFB', // Light text
     borderWidth: 1,
     borderColor: '#374151',
@@ -1159,7 +1153,7 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#111827', // Dark text on button
   },
   debtSummary: {
@@ -1176,12 +1170,11 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   summaryValue: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
   },
   calculatorSection: {
@@ -1191,7 +1184,7 @@ const styles = StyleSheet.create({
   },
   calculatorTitle: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 16,
   },
@@ -1208,12 +1201,11 @@ const styles = StyleSheet.create({
   },
   resultLabel: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   resultValue: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
   },
   impactHeader: {
@@ -1223,13 +1215,12 @@ const styles = StyleSheet.create({
   },
   impactTitle: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginLeft: 8,
   },
   impactSubtitle: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     marginBottom: 16,
   },
@@ -1249,13 +1240,12 @@ const styles = StyleSheet.create({
   },
   impactGoalName: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   impactSavings: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#34D399', // Bright green
   },
   impactRight: {
@@ -1263,12 +1253,11 @@ const styles = StyleSheet.create({
   },
   impactTimeReduction: {
     fontSize: 14,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#10B981', // Bright green
   },
   impactTimeLabel: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   contributeButton: {
@@ -1281,7 +1270,7 @@ const styles = StyleSheet.create({
   },
   contributeButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#111827', // Dark text on button
   },
   quickContributeButton: {
@@ -1295,7 +1284,7 @@ const styles = StyleSheet.create({
   },
   quickContributeText: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#34D399', // Bright green
     marginLeft: 4,
   },
@@ -1307,13 +1296,12 @@ const styles = StyleSheet.create({
   },
   goalSummaryTitle: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 8,
   },
   goalSummaryProgress: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     marginBottom: 8,
   },
@@ -1325,7 +1313,7 @@ const styles = StyleSheet.create({
   },
   previewTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 12,
   },
@@ -1337,12 +1325,11 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   previewValue: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
   },
   strategyButton: {
@@ -1358,7 +1345,7 @@ const styles = StyleSheet.create({
   },
   strategyButtonText: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#3B82F6',
     marginLeft: 8,
   },
@@ -1389,13 +1376,12 @@ const styles = StyleSheet.create({
   },
   strategyCardTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB',
     marginLeft: 8,
   },
   strategySubtitle: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF',
     marginLeft: 8,
   },
@@ -1404,17 +1390,16 @@ const styles = StyleSheet.create({
   },
   strategyTime: {
     fontSize: 18,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB',
   },
   strategyInterest: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF',
   },
   strategySavings: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#10B981',
   },
   recommendationCard: {
@@ -1432,13 +1417,12 @@ const styles = StyleSheet.create({
   },
   recommendationTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#10B981',
     marginLeft: 8,
   },
   recommendationText: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#E5E7EB',
     lineHeight: 20,
   },
@@ -1447,7 +1431,7 @@ const styles = StyleSheet.create({
   },
   timelineTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB',
     marginBottom: 16,
   },
@@ -1469,7 +1453,7 @@ const styles = StyleSheet.create({
   },
   timelineStepNumber: {
     fontSize: 14,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#FFFFFF',
   },
   timelineContent: {
@@ -1478,19 +1462,17 @@ const styles = StyleSheet.create({
   },
   timelineDebtName: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB',
     marginBottom: 4,
   },
   timelineDetails: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF',
     marginBottom: 2,
   },
   timelineInterest: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#64748B',
   },
   // Smart Goal Suggestions styles
@@ -1506,13 +1488,12 @@ const styles = StyleSheet.create({
   },
   smartGoalTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#FCD34D',
     marginBottom: 8,
   },
   smartGoalDescription: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#FEF3C7',
     marginBottom: 12,
   },
@@ -1528,17 +1509,16 @@ const styles = StyleSheet.create({
   },
   smartGoalAmount: {
     fontSize: 16,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F59E0B',
   },
   smartGoalTimeframe: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#FCD34D',
   },
   smartGoalReasoning: {
     fontSize: 13,
-    fontFamily: 'Inter-Regular',
     color: '#FEF3C7',
     fontStyle: 'italic',
     marginBottom: 16,
@@ -1555,13 +1535,12 @@ const styles = StyleSheet.create({
   },
   createGoalButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F59E0B',
     marginLeft: 6,
   },
   sectionSubtitle: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF',
     marginTop: 4,
   },

@@ -300,13 +300,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   content: {
@@ -353,13 +352,12 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginRight: 8,
   },
   categoryTransactions: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   categoryRight: {
@@ -367,7 +365,7 @@ const styles = StyleSheet.create({
   },
   categoryAmount: {
     fontSize: 20,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
@@ -377,7 +375,7 @@ const styles = StyleSheet.create({
   },
   trendText: {
     fontSize: 12,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     marginLeft: 4,
   },
   spikeAlert: {
@@ -391,7 +389,6 @@ const styles = StyleSheet.create({
   },
   spikeAlertText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#FBBF24', // Brighter yellow
     flex: 1,
   },
@@ -403,7 +400,7 @@ const styles = StyleSheet.create({
   },
   whyButtonText: {
     fontSize: 12,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#FBBF24', // Brighter yellow
     marginLeft: 4,
   },
@@ -424,7 +421,6 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     minWidth: 80,
     textAlign: 'right',
@@ -445,7 +441,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
   },
   closeButton: {
@@ -468,13 +464,12 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 20,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   transactionsList: {
@@ -484,7 +479,7 @@ const styles = StyleSheet.create({
   },
   transactionsTitle: {
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 16,
   },
@@ -498,18 +493,17 @@ const styles = StyleSheet.create({
   },
   transactionMerchant: {
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#F9FAFB', // Light text
     marginBottom: 2,
   },
   transactionDate: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
   },
   transactionAmount: {
     fontSize: 14,
-    fontFamily: 'Inter-Bold',
+    fontWeight: 'bold',
     color: '#F9FAFB', // Light text
   },
   overlayContainer: {
@@ -528,14 +522,13 @@ const styles = StyleSheet.create({
   },
   whyModalTitle: {
     fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     color: '#F9FAFB', // Light text
     marginBottom: 8,
     textAlign: 'center',
   },
   whyModalSubtitle: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#9CA3AF', // Lighter grey
     textAlign: 'center',
     marginBottom: 24,
@@ -554,7 +547,7 @@ const styles = StyleSheet.create({
   },
   reasonText: {
     fontSize: 16,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     color: '#F9FAFB', // Light text
     textAlign: 'center',
   },
@@ -564,7 +557,6 @@ const styles = StyleSheet.create({
   },
   skipReasonText: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
     color: '#6B7280', // Darker grey
   },
 });
