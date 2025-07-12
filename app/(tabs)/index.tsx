@@ -8,8 +8,8 @@ import { useSession } from '../../hooks/useSession';
 const API_HOST = 'http://127.0.0.1:8000'; // Assuming backend runs locally on port 8000
 
 // Function to get time-based greeting in Eastern Time
-const getTimeBasedGreeting = (firstName: string | null): string => {
-  if (!firstName) return 'Good morning!';
+const getTimeBasedGreeting = (firstName: string | null): { greeting: string; name: string } => {
+  if (!firstName) return { greeting: 'Good Morning', name: '' };
   
   // Get current time in Eastern Time
   const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
@@ -17,16 +17,28 @@ const getTimeBasedGreeting = (firstName: string | null): string => {
   
   let greeting = '';
   if (currentHour >= 5 && currentHour < 12) {
-    greeting = 'Good morning';
+    greeting = 'Good Morning';
   } else if (currentHour >= 12 && currentHour < 17) {
-    greeting = 'Good afternoon';
+    greeting = 'Good Afternoon';
   } else if (currentHour >= 17 && currentHour < 21) {
-    greeting = 'Good evening';
+    greeting = 'Good Evening';
   } else {
-    greeting = 'Good night';
+    greeting = 'Good Night';
   }
   
-  return `${greeting}, ${firstName}!`;
+  return { greeting, name: firstName };
+};
+
+const GreetingComponent = ({ firstName }: { firstName: string | null }) => {
+  const { greeting, name } = getTimeBasedGreeting(firstName);
+  
+  return (
+    <View style={styles.greetingContainer}>
+      <Text style={styles.greetingText}>{greeting}, </Text>
+      <Text style={styles.greetingName}>{name}</Text>
+      <Text style={styles.greetingName}>!</Text>
+    </View>
+  );
 };
 
 export default function HomeScreen() {
@@ -231,7 +243,7 @@ export default function HomeScreen() {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={() => (
         <>
-          <Text style={styles.greetingText}>{getTimeBasedGreeting(firstName)}</Text>
+          <GreetingComponent firstName={firstName} />
           
           {recurring.length > 0 && (
             <View style={styles.recurringContainer}>
@@ -596,13 +608,21 @@ const styles = StyleSheet.create({
     color: '#FEF3C7',
     fontStyle: 'italic',
   },
-  greetingText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#34D399', // Bright green color to stand out
-    textAlign: 'left',
+  greetingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 20,
     marginBottom: 20,
     paddingLeft: 8,
+  },
+  greetingText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#F9FAFB', // White text for greeting
+  },
+  greetingName: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#34D399', // Green for name and exclamation
   },
 });
