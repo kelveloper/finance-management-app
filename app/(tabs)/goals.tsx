@@ -86,7 +86,11 @@ export default function GoalsScreen() {
   }>({
     queryKey: ['financialData'],
     queryFn: async () => {
-      const response = await fetch(`${API_HOST}/api/data`);
+      const response = await fetch(`${API_HOST}/api/data`, {
+        headers: {
+          'x-user-id': userId || getDevUserId(),
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch financial data');
       }
@@ -104,7 +108,7 @@ export default function GoalsScreen() {
     queryFn: async () => {
       const response = await fetch(`${API_HOST}/api/data`, {
         headers: {
-          'x-user-id': userId || 'mock_user_123',
+          'x-user-id': userId || getDevUserId(),
         }
       });
       if (!response.ok) {

@@ -4,6 +4,7 @@ import { useSession } from '../../hooks/useSession';
 import * as DocumentPicker from 'expo-document-picker';
 import { UploadCloud } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getDevUserId } from '../../utils/environment';
 
 // Web-compatible alert function
 const showAlert = (title: string, message: string, buttons?: Array<{text: string, onPress?: () => void, style?: 'default' | 'cancel' | 'destructive'}>) => {
@@ -68,7 +69,7 @@ export default function BankLinkingScreen() {
           headers: {
             // Let the browser set the Content-Type with boundary for multipart/form-data
             // 'Content-Type': 'multipart/form-data',
-            'x-user-id': userId || 'mock_user_123',
+            'x-user-id': userId || getDevUserId(),
           },
         });
 

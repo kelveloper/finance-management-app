@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Transaction, Insight, RecurringTransaction, PersonalizedInsight } from '../../common/types';
 import { useSession } from '../../hooks/useSession';
 import { Ionicons } from '@expo/vector-icons';
-import { getApiUrl } from '../../utils/environment';
+import { getApiUrl, getDevUserId } from '../../utils/environment';
 
 // Function to get time-based greeting in Eastern Time
 const getTimeBasedGreeting = (firstName: string | null): { greeting: string; name: string } => {
@@ -400,7 +400,11 @@ const SimilarTransactionsPreviewModal = ({
         ...(subcategory && { subcategory: subcategory })
       });
       
-      const response = await fetch(`${getApiUrl()}/api/transactions/${transactionId}/preview-similar?${queryParams}`);
+      const response = await fetch(`${getApiUrl()}/api/transactions/${transactionId}/preview-similar?${queryParams}`, {
+        headers: {
+          'x-user-id': getDevUserId(),
+        }
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch preview');
@@ -498,7 +502,7 @@ const SimilarTransactionsPreviewModal = ({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-user-id': 'dev_user_2025',
+            'x-user-id': getDevUserId(),
           },
           body: JSON.stringify({
             selectedTransactionId: transactionId,
@@ -779,7 +783,7 @@ export default function HomeScreen() {
     queryFn: async () => {
       const response = await fetch(`${getApiUrl()}/api/data`, {
         headers: {
-                     'x-user-id': userId || 'mock_user_123',
+          'x-user-id': userId || getDevUserId(),
         }
       });
       if (!response.ok) {
@@ -946,7 +950,10 @@ export default function HomeScreen() {
       
       const response = await fetch(`${getApiUrl()}/api/transactions-bulk/update-selected`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': userId || getDevUserId(),
+        },
         body: JSON.stringify(requestBody),
       });
       
@@ -985,7 +992,10 @@ export default function HomeScreen() {
     try {
         const response = await fetch(`${getApiUrl()}/api/transactions/${transactionId}/tag`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'x-user-id': userId || getDevUserId(),
+            },
             body: JSON.stringify({ tag: newTag }),
         });
         if (!response.ok) {

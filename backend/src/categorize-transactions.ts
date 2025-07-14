@@ -77,35 +77,8 @@ const SUBCATEGORY_STRUCTURE = {
 };
 
 // Privacy-focused categorization rules (NO personal names)
+// Ordered by specificity - more specific/financial patterns first to avoid false matches
 const ENHANCED_CATEGORY_RULES: { [category: string]: string[] } = {
-  'Income': [
-    'DIRECT DEP', 'SALARY', 'PAYROLL', 'Zelle payment from', 'FREELANCE', 'CONTRACTOR'
-  ],
-  'Food & Drink': [
-    "MCDONALD'S", 'GRUBHUB', 'SQ *', 'TST*', 'CARMINES PIZZERIA', 
-    '8TH AVE DELI', 'MI AMOR FAST FOOD', 'FRESH & CO', 'FRESH&CO',
-    'PARIS BAGUETTE', 'KFC', 'FOOD GALLERY', 'COURT SQUARE DINER',
-    'FORTUNATO BROS BAKERY', 'DIAMOND EXPRESS DELI', 'RIDGEWOOD DELI',
-    'BRAVO SUPERMARKET', 'KEY FOOD', 'RESTAURANT', 'CAFE', 'PIZZA',
-    'DELI', 'BAKERY', 'FOOD'
-  ],
-  'Transportation': [
-    'UBER', 'MTA*NYCT PAYGO', 'MTA*NYCT', 'SUBWAY', 'TAXI', 'LYFT',
-    'TRANSIT', 'BUS', 'TRAIN'
-  ],
-  'Shopping': [
-    'CVS/PHARMACY', 'CVS/PHARM', 'DORNEY PARK MERCHANDISE', 'DOLLAR GENERAL',
-    'BJS WHOLESALE', 'TARGET', 'WALMART', 'AMAZON', 'COSTCO', 'STORE',
-    'SHOPPING', 'RETAIL'
-  ],
-  'Entertainment': [
-    'DORNEY PARK', 'AMC', 'MOVIE', 'THEATER', 'CINEMA', 'NETFLIX',
-    'SPOTIFY', 'GAMING', 'SUPERCELLSTORE', 'TIKTOK SHOP'
-  ],
-  'Bills & Utilities': [
-    'HP *INSTANT INK', 'ELECTRIC', 'GAS', 'WATER', 'PHONE', 'INTERNET',
-    'CABLE', 'INSURANCE', 'UTILITIES', 'VERIZON', 'AT&T', 'TMOBILE'
-  ],
   'Financial & Transfers': [
     'COINBASE', 'COIN BASE', 'Zelle payment to', 'Acorns', 'PAYPAL', 
     'APPLECARD GSBANK', 'BARCLAYCARD US', '1ST BANKCARD CTR', 
@@ -114,12 +87,40 @@ const ENHANCED_CATEGORY_RULES: { [category: string]: string[] } = {
     'CITIZENS ACCESS', 'M1 PAYMENTS', 'CREDIT CARD', 'BANK TRANSFER',
     'ONLINE PMT', 'CAPITAL ONE', 'PROMINIS MEDICAL'
   ],
+  'Income': [
+    'DIRECT DEP', 'SALARY', 'PAYROLL', 'Zelle payment from', 'FREELANCE', 'CONTRACTOR'
+  ],
+  'Bills & Utilities': [
+    'HP *INSTANT INK', 'ELECTRIC', 'GAS', 'WATER', 'PHONE', 'INTERNET',
+    'CABLE', 'INSURANCE', 'UTILITIES', 'VERIZON', 'AT&T', 'TMOBILE'
+  ],
+  'Transportation': [
+    'UBER', 'MTA*NYCT PAYGO', 'MTA*NYCT', 'SUBWAY', 'TAXI', 'LYFT',
+    'TRANSIT', 'BUS', 'TRAIN'
+  ],
   'Health & Medical': [
     'PHARMACY', 'DOCTOR', 'HOSPITAL', 'MEDICAL', 'HEALTH', 'DENTAL',
     'CVS/PHARMACY', 'WALGREENS', 'URGENT CARE'
   ],
+  'Entertainment': [
+    'DORNEY PARK', 'AMC', 'MOVIE', 'THEATER', 'CINEMA', 'NETFLIX',
+    'SPOTIFY', 'GAMING', 'SUPERCELLSTORE', 'TIKTOK SHOP'
+  ],
+  'Shopping': [
+    'CVS/PHARMACY', 'CVS/PHARM', 'DORNEY PARK MERCHANDISE', 'DOLLAR GENERAL',
+    'BJS WHOLESALE', 'TARGET', 'WALMART', 'AMAZON', 'COSTCO', 'STORE',
+    'SHOPPING', 'RETAIL'
+  ],
   'Personal Care': [
     'GATES MEGAWASH', 'SALON', 'BARBER', 'SPA', 'GYM', 'FITNESS'
+  ],
+  'Food & Drink': [
+    "MCDONALD'S", 'GRUBHUB', 'SQ *', 'TST*', 'CARMINES PIZZERIA', 
+    '8TH AVE DELI', 'MI AMOR FAST FOOD', 'FRESH & CO', 'FRESH&CO',
+    'PARIS BAGUETTE', 'KFC', 'FOOD GALLERY', 'COURT SQUARE DINER',
+    'FORTUNATO BROS BAKERY', 'DIAMOND EXPRESS DELI', 'RIDGEWOOD DELI',
+    'BRAVO SUPERMARKET', 'KEY FOOD', 'RESTAURANT', 'CAFE', 'PIZZA',
+    'DELI', 'BAKERY', 'FOOD'
   ]
 };
 
@@ -148,29 +149,43 @@ const levenshteinDistance = (str1: string, str2: string): number => {
   return matrix[str2.length][str1.length];
 };
 
-// Smart pattern matching with fuzzy logic
+// Smart pattern matching with improved fuzzy logic
 const smartMatch = (description: string, patterns: string[]): boolean => {
   const normalizedDesc = description.toUpperCase().replace(/[^A-Z0-9\s]/g, ' ');
   
   for (const pattern of patterns) {
     const normalizedPattern = pattern.toUpperCase().replace(/[^A-Z0-9\s]/g, ' ');
     
-    // Exact match
+    // Exact match (highest priority)
     if (normalizedDesc.includes(normalizedPattern)) {
       return true;
     }
     
-    // Fuzzy match for company names
+    // Improved fuzzy match for company names
     const patternWords = normalizedPattern.split(/\s+/).filter(w => w.length > 2);
-    const descWords = normalizedDesc.split(/\s+/);
+    const descWords = normalizedDesc.split(/\s+/).filter(w => w.length > 2);
     
+    // Only match if the pattern word is substantial (>= 4 characters) and matches closely
     for (const patternWord of patternWords) {
-      if (descWords.some(descWord => 
-        descWord.includes(patternWord) || 
-        patternWord.includes(descWord) ||
-        (patternWord.length > 4 && levenshteinDistance(patternWord, descWord) <= 1)
-      )) {
-        return true;
+      if (patternWord.length >= 4) {
+        for (const descWord of descWords) {
+          // More restrictive matching:
+          // 1. Exact word match
+          if (patternWord === descWord) {
+            return true;
+          }
+          // 2. One word fully contains the other (but only if the contained word is >= 4 chars)
+          if (patternWord.length >= 4 && descWord.length >= 4) {
+            if (patternWord.includes(descWord) || descWord.includes(patternWord)) {
+              return true;
+            }
+          }
+          // 3. Levenshtein distance <= 1 for words >= 5 characters
+          if (patternWord.length >= 5 && descWord.length >= 5 && 
+              levenshteinDistance(patternWord, descWord) <= 1) {
+            return true;
+          }
+        }
       }
     }
   }
@@ -370,16 +385,29 @@ const extractKeyPatterns = (description: string): string[] => {
     patterns.push(words[0]);
   }
   
-  // Look for common business patterns
-  const businessPatterns = [
-    'STARBUCKS', 'MCDONALD', 'UBER', 'COINBASE', 'GRUBHUB', 'PAYPAL',
-    'AMAZON', 'APPLE', 'NETFLIX', 'SPOTIFY', 'FRESH&CO', 'FRESH & CO',
-    'CVS', 'WALGREENS', 'TARGET', 'WALMART', 'COSTCO'
-  ];
+  // Look for common business patterns using improved regex matching
+  const businessPatterns = {
+    'COINBASE': /\bCOINBASE\b|\bCOINBASE\.COM\b|\bCOINBASE\s+INC\b/i,
+    'STARBUCKS': /\bSTARBUCKS\b/i,
+    'MCDONALD': /\bMCDONALD\b/i,
+    'UBER': /\bUBER\b/i,
+    'GRUBHUB': /\bGRUBHUB\b/i,
+    'PAYPAL': /\bPAYPAL\b/i,
+    'AMAZON': /\bAMAZON\b/i,
+    'APPLE': /\bAPPLE\b/i,
+    'NETFLIX': /\bNETFLIX\b/i,
+    'SPOTIFY': /\bSPOTIFY\b/i,
+    'FRESH&CO': /\bFRESH.*CO\b|\bFRESH&CO\b/i,
+    'CVS': /\bCVS\b/i,
+    'WALGREENS': /\bWALGREENS\b/i,
+    'TARGET': /\bTARGET\b/i,
+    'WALMART': /\bWALMART\b/i,
+    'COSTCO': /\bCOSTCO\b/i
+  };
   
-  businessPatterns.forEach(pattern => {
-    if (normalized.includes(pattern)) {
-      patterns.push(pattern);
+  Object.entries(businessPatterns).forEach(([merchant, pattern]) => {
+    if (pattern.test(description)) {
+      patterns.push(merchant);
     }
   });
   
@@ -475,56 +503,93 @@ export const categorizeTransactions = async (): Promise<{
   // First, auto-learn from existing categorized transactions
   await autoLearnFromSimilarTransactions();
   
-  console.log('Fetching uncategorized transactions from Supabase...');
+  console.log('Fetching all transactions for categorization from Supabase...');
 
-  const { data: transactions, error } = await supabase
-    .from('transactions')
-    .select('id, description, category, subcategory')
-    .or('category.is.null,category.eq.General,category.eq.Uncategorized');
-
-  if (error) {
-    console.error('Error fetching transactions:', error);
-    throw error;
+  // Get ALL transactions to ensure complete categorization (using pagination to bypass 1000 limit)
+  let allTransactions: any[] = [];
+  let from = 0;
+  const pageSize = 1000;
+  
+  while (true) {
+    const { data: pageTransactions, error: pageError } = await supabase
+      .from('transactions')
+      .select('id, description, category, subcategory')
+      .range(from, from + pageSize - 1);
+    
+    if (pageError) {
+      console.error('Error fetching transactions page:', pageError);
+      throw pageError;
+    }
+    
+    if (!pageTransactions || pageTransactions.length === 0) {
+      break; // No more transactions
+    }
+    
+    allTransactions.push(...pageTransactions);
+    console.log(`📄 Fetched page: ${from + 1}-${from + pageTransactions.length} (${pageTransactions.length} transactions)`);
+    
+    if (pageTransactions.length < pageSize) {
+      break; // Last page
+    }
+    
+    from += pageSize;
   }
+  
+  const transactions = allTransactions;
 
   if (!transactions || transactions.length === 0) {
     console.log('No transactions to categorize.');
     return { total: 0, categorized: {}, subcategorized: {}, uncategorized: 0 };
   }
 
-  console.log(`Found ${transactions.length} transactions to categorize.`);
+  console.log(`Found ${transactions.length} total transactions.`);
+  console.log(`Processing transactions that need categorization...`);
 
   // Track categorization results
   const categoryStats: Record<string, number> = {};
   const subcategoryStats: Record<string, number> = {};
   let generalCount = 0;
 
-  const updates = transactions.map(t => {
-    const { category, subcategory } = getCategoryAndSubcategory(t.description);
-    
-    // Track stats
-    if (category === 'General') {
-      generalCount++;
-    } else {
-      categoryStats[category] = (categoryStats[category] || 0) + 1;
-      const subcatKey = `${category} > ${subcategory}`;
-      subcategoryStats[subcatKey] = (subcategoryStats[subcatKey] || 0) + 1;
-    }
+  const updates = transactions
+    .filter(t => {
+      // Only categorize transactions that are uncategorized, null, or have 'General' category
+      const needsCategorization = !t.category || 
+                                 t.category === 'General' || 
+                                 t.category === 'Uncategorized';
+      
+      if (!needsCategorization) {
+        console.log(`  - ID ${t.id}: ${t.description.substring(0, 50)}... -> Already categorized as ${t.category}`);
+      }
+      
+      return needsCategorization;
+    })
+    .map(t => {
+      const { category, subcategory } = getCategoryAndSubcategory(t.description);
+      
+      // Track stats
+      if (category === 'General') {
+        generalCount++;
+      } else {
+        categoryStats[category] = (categoryStats[category] || 0) + 1;
+        const subcatKey = `${category} > ${subcategory}`;
+        subcategoryStats[subcatKey] = (subcategoryStats[subcatKey] || 0) + 1;
+      }
 
-    console.log(`  - ID ${t.id}: ${t.description.substring(0, 50)}... -> ${category} > ${subcategory}`);
-    return supabase
-      .from('transactions')
-      .update({ 
-        category: category,
-        subcategory: subcategory
-      })
-      .eq('id', t.id);
-  });
+      console.log(`  - ID ${t.id}: ${t.description.substring(0, 50)}... -> ${category} > ${subcategory}`);
+      return supabase
+        .from('transactions')
+        .update({ 
+          category: category,
+          subcategory: subcategory
+        })
+        .eq('id', t.id);
+    });
 
   console.log('Updating categories and subcategories in Supabase...');
   await Promise.all(updates);
 
   console.log('🎯 Smart categorization with subcategories complete!');
+  console.log(`📊 Summary: ${updates.length} transactions categorized out of ${transactions.length} total transactions`);
   
   return {
     total: transactions.length,

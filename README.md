@@ -128,3 +128,20 @@ Welcome Screen → Create Account → Upload CSV Data → Personal AI Dashboard
 ```
 
 The application provides a complete personalized financial coaching experience that learns about your unique spending habits!
+
+## 🏦 Plaid Merchant & Category Enrichment (MVP)
+
+- After uploading transactions via `/api/upload-csv`, the backend will attempt to enrich each transaction using Plaid (if a Plaid access token is provided in the `x-plaid-access-token` header).
+- If Plaid returns a category, it will be used for the transaction.
+- If Plaid does not return a category or no access token is provided, the system falls back to local categorization logic.
+
+### How to Use
+
+1. **Set up your Plaid credentials in `.env.development`:**
+   - `PLAID_CLIENT_ID=...`
+   - `PLAID_SECRET=...`
+   - `PLAID_ENV=sandbox`
+2. **Send a CSV upload request with the Plaid access token:**
+   - Add the header: `x-plaid-access-token: <your-access-token>`
+   - Example: `curl -H "x-plaid-access-token: sandbox-..." ...`
+3. **Transactions will be enriched with Plaid categories if available, otherwise local logic is used.**

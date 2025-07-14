@@ -129,14 +129,22 @@ export function getApiUrl(): string {
   
   switch (env) {
     case 'development':
-      return 'http://127.0.0.1:8000';
+      return 'http://localhost:8000';
     case 'staging':
-      return 'http://127.0.0.1:8000'; // Local staging backend for now
+      return 'http://localhost:8000'; // Local staging backend for now
     case 'production':
       return 'https://your-production-api.com'; // Replace with your production API URL
     default:
-      return 'http://127.0.0.1:8000';
+      return 'http://localhost:8000';
   }
+}
+
+/**
+ * Generates a consistent development user ID (same logic as backend)
+ */
+export function getDevUserId(): string {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  return `dev_user_${today.replace(/-/g, '')}`;
 }
 
 /**

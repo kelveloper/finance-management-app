@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import moment from 'moment';
 import multer from 'multer';
 import csv from 'csv-parser';
+import { enrichTransactionWithPlaid } from './services/plaid-enrichment';
 import { Readable } from 'stream';
 import { supabase } from './supabase';
 import { detectRecurringTransactions } from './services/recurring';
@@ -333,10 +334,14 @@ function getPlanningHorizon(personality: string): 'short' | 'medium' | 'long' {
 app.get('/api/data', (async (req: Request, res: Response) => {
     // For now, get user ID from header or default to mock user
     // In production, this would come from authenticated JWT token
-    const requestedUserId = req.headers['x-user-id'] as string || 'mock_user_123';
+    let userId = req.headers['x-user-id'] as string;
     
-    // DEVELOPMENT ONLY: Always use dev_user_2025 to see test data
-    const userId = process.env.NODE_ENV === 'development' ? 'dev_user_2025' : requestedUserId;
+    if (!userId) {
+        // Use the same date-based user ID generation as the upload endpoint
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        userId = `dev_user_${today.replace(/-/g, '')}`;
+        console.log(`🎯 Generated dev user ID for data fetch: ${userId}`);
+    }
 
     try {
         console.log(`🔍 Fetching transactions for user: ${userId}`);
@@ -467,7 +472,7 @@ function extractSmartMerchantPatterns(description: string): string[] {
     
     // Known merchant patterns with their variations (case-insensitive)
     const merchantPatterns = {
-        'COINBASE': /\bCOINBASE\b/i,
+        'COINBASE': /\bCOINBASE\b|\bCOINBASE\.COM\b|\bCOINBASE\s+INC\b/i,
         'STARBUCKS': /\bSTARBUCKS\b|\bSBX\b/i,
         'MCDONALD': /\bMCDONALD\b|\bMCD\b|\bMCDONALDS\b/i,
         'UBER': /\bUBER\b(?!.*EATS)/i, // Uber but not Uber Eats
@@ -590,7 +595,7 @@ function isTransactionSimilar(originalDescription: string, compareDescription: s
 function extractMerchantName(description: string): string | null {
     // Enhanced known merchant patterns (case-insensitive with word boundaries)
     const merchantPatterns = {
-        'COINBASE': /\bCOINBASE\b/i,
+        'COINBASE': /\bCOINBASE\b|\bCOINBASE\.COM\b|\bCOINBASE\s+INC\b/i,
         'STARBUCKS': /\bSTARBUCKS\b/i,
         'MCDONALD': /\bMCDONALD\b/i,
         'UBER': /\bUBER\b/i,
@@ -666,24 +671,64 @@ app.get('/api/transactions/:transactionId/preview-similar', (async (req: Request
             return isTransactionSimilar(transaction.description, t.description, uniquePatterns);
         });
 
+        // Console log Coinbase transaction counts if this is a Coinbase transaction
+        if (uniquePatterns.includes('COINBASE')) {
+            const allCoinbaseTransactions = allTransactions.filter(t => 
+                t.description.toUpperCase().includes('COINBASE')
+            );
+            const uncategorizedCoinbase = allCoinbaseTransactions.filter(t => 
+                !t.category || t.category === 'Uncategorized' || t.category === 'General'
+            );
+            
+            // Also check for exact "Uncategorized" matches to debug frontend discrepancy
+            const exactlyUncategorized = allCoinbaseTransactions.filter(t => 
+                t.category === 'Uncategorized'
+            );
+            const nullCategory = allCoinbaseTransactions.filter(t => 
+                !t.category || t.category === null || t.category === undefined
+            );
+            const generalCategory = allCoinbaseTransactions.filter(t => 
+                t.category === 'General'
+            );
+            
+            // Detailed breakdown of all Coinbase transaction categories
+            const categoryBreakdown: { [key: string]: number } = {};
+            allCoinbaseTransactions.forEach(t => {
+                const cat = t.category || 'NULL/UNDEFINED';
+                categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + 1;
+            });
+            
+            console.log(`🪙 COINBASE TRANSACTION ANALYSIS:`);
+            console.log(`  📊 Total Coinbase transactions in database: ${allCoinbaseTransactions.length}`);
+            console.log(`  ❓ Uncategorized Coinbase transactions: ${uncategorizedCoinbase.length}`);
+            console.log(`  🔍 Debug breakdown:`);
+            console.log(`    📝 Exactly "Uncategorized": ${exactlyUncategorized.length}`);
+            console.log(`    📝 Null/undefined category: ${nullCategory.length}`);
+            console.log(`    📝 "General" category: ${generalCategory.length}`);
+            console.log(`  🎯 Coinbase transactions matching similarity: ${matchingTransactions.length}`);
+            console.log(`  🔍 Pattern used for matching: ${uniquePatterns.join(', ')}`);
+            console.log(`  📋 Category breakdown for all Coinbase transactions:`);
+            Object.entries(categoryBreakdown).forEach(([cat, count]) => {
+                console.log(`    ${cat}: ${count} transactions`);
+            });
+        }
+
         const similarTransactions = matchingTransactions.filter(t => {
-            // Check if transaction is already in the correct category
-            const alreadyCorrectCategory = t.category === category;
-            const alreadyCorrectSubcategory = subcategory ? 
-                t.subcategory === subcategory : 
-                !t.subcategory || t.subcategory === null;
+            // Check if transaction needs to be updated
+            const needsCategoryUpdate = t.category !== category;
+            const needsSubcategoryUpdate = subcategory ? 
+                t.subcategory !== subcategory : 
+                false; // If no subcategory provided, don't filter based on subcategory
             
-            const isAlreadyCorrect = alreadyCorrectCategory && alreadyCorrectSubcategory;
-            
-            // Only include if it's not already correctly categorized
-            return !isAlreadyCorrect;
+            // Include transaction if it needs any update (category OR subcategory)
+            return needsCategoryUpdate || needsSubcategoryUpdate;
         });
 
         console.log(`🔍 Preview filtering results:`);
         console.log(`  📊 Total matching transactions: ${matchingTransactions.length}`);
+        console.log(`  🎯 Target: ${category}${subcategory ? ` > ${subcategory}` : ''}`);
+        console.log(`  📋 Transactions needing updates: ${similarTransactions.length}`);
         console.log(`  ✅ Already correctly categorized: ${matchingTransactions.length - similarTransactions.length}`);
-        console.log(`  📋 Transactions to show in preview: ${similarTransactions.length}`);
-        console.log(`  🎯 Target category: ${category}${subcategory ? ` > ${subcategory}` : ''}`);
         
         if (matchingTransactions.length > similarTransactions.length) {
             const alreadyCorrect = matchingTransactions.filter(t => {
@@ -693,12 +738,7 @@ app.get('/api/transactions/:transactionId/preview-similar', (async (req: Request
                     !t.subcategory || t.subcategory === null;
                 return alreadyCorrectCategory && alreadyCorrectSubcategory;
             });
-            console.log(`  📝 Already correct transactions:`, alreadyCorrect.map(t => ({
-                id: t.id,
-                description: t.description.substring(0, 50) + '...',
-                category: t.category,
-                subcategory: t.subcategory
-            })));
+            console.log(`  📝 Already correct transactions count: ${alreadyCorrect.length}`);
         }
 
         res.json({
@@ -1163,8 +1203,15 @@ interface ChaseCsvRow {
 }
 
 app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
-    // Use consistent development userID for development phase
-    const userId = req.headers['x-user-id'] as string || 'dev_user_2025'; 
+    // Generate or use consistent development userID for development phase
+    let userId = req.headers['x-user-id'] as string;
+    
+    if (!userId) {
+        // Generate a persistent dev user ID based on timestamp (changes daily)
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        userId = `dev_user_${today.replace(/-/g, '')}`;
+        console.log(`🎯 Generated dev user ID: ${userId}`);
+    } 
 
     // Development mode: Check if we should use real Supabase or mock data
     const hasSupabaseUrl = process.env.SUPABASE_URL && process.env.SUPABASE_URL.length > 0;
@@ -1237,17 +1284,17 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                         return; // Skip this row
                     }
                     
-                    // Generate unique transaction ID
-                    const transactionId = `${userId}_${Date.now()}_${transactions.length}`;
+                    // Generate unique transaction ID (numeric for database compatibility)
+                    const transactionId = Date.now() + transactions.length;
                     
                     transactions.push({
                         id: transactionId,
                         user_id: userId,
-                        account_id: 'chase-8793', // Default account ID for Chase uploads
                         posted_date: parsedDate,
                         description: descriptionValue.trim(),
                         amount: amount,
                         category: 'Uncategorized', // Will be categorized automatically by AI
+                        subcategory: null,
                         tag: null, // Will be tagged later by AI
                     });
                 }
@@ -1276,14 +1323,63 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                 console.log(`📤 Inserting ${transactions.length} new transactions...`);
                 
                 // Insert new ones with better error handling
-                const { error } = await supabase.from('transactions').insert(transactions);
-
+                console.log('📤 Attempting to insert transactions with structure:', Object.keys(transactions[0] || {}));
+                
+                // Try bulk insert first, if that fails, try individual inserts
+                let insertSuccess = false;
+                let insertError = null;
+                
+                try {
+                    const { data: insertData, error } = await supabase.from('transactions').insert(transactions);
                 if (error) {
-                    console.error('❌ Supabase insert error:', error);
+                        insertError = error;
+                        console.error('❌ Bulk insert failed:', error.message);
                     
-                    // If it's a schema cache error, provide a development workaround
+                        // If it's a schema cache error, try individual inserts
                     if (error.message.includes('schema cache') || error.message.includes('account_id')) {
-                        console.log('🚧 Schema cache issue detected - providing development response');
+                            console.log('🔄 Trying individual transaction inserts to bypass schema cache...');
+                            
+                            let successCount = 0;
+                            let failCount = 0;
+                            
+                            for (const transaction of transactions) {
+                                try {
+                                    const { error: singleError } = await supabase
+                                        .from('transactions')
+                                        .insert(transaction);
+                                    
+                                    if (singleError) {
+                                        console.error(`❌ Failed to insert transaction ${transaction.id}:`, singleError.message);
+                                        failCount++;
+                                    } else {
+                                        successCount++;
+                                    }
+                                } catch (err) {
+                                    console.error(`❌ Exception inserting transaction ${transaction.id}:`, err);
+                                    failCount++;
+                                }
+                            }
+                            
+                            console.log(`📊 Individual insert results: ${successCount} successful, ${failCount} failed`);
+                            
+                            if (successCount > 0) {
+                                insertSuccess = true;
+                                console.log('✅ Successfully inserted transactions using individual inserts');
+                            } else {
+                                throw new Error('All individual inserts failed');
+                            }
+                        } else {
+                            throw error;
+                        }
+                    } else {
+                        insertSuccess = true;
+                        console.log('✅ Successfully inserted transactions using bulk insert');
+                    }
+                } catch (err) {
+                    console.error('❌ All insert methods failed:', err);
+                    
+                    // Fallback to development mode response
+                    console.log('🚧 All insert methods failed - providing development response');
                         
                         const accessToken = new Date().getTime().toString();
                         const mockCategorization = {
@@ -1300,18 +1396,68 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                         };
                         
                         res.status(200).json({ 
-                            message: `🚧 Dev mode: ${transactions.length} transactions processed from CSV! Schema cache issue bypassed.`,
+                        message: `🚧 Dev mode: ${transactions.length} transactions processed from CSV! Insert failed, using mock response.`,
                             accessToken: accessToken,
                             categorization: mockCategorization,
-                            note: 'Development mode: CSV processed but not stored due to schema cache issue'
+                        note: 'Development mode: CSV processed but not stored due to insert failures',
+                        userId: userId
                         });
                         return;
                     }
-                    
-                    throw error;
-                }
+                // --- NEW: Plaid enrichment after upload ---
+                // If Plaid access token is available, try to enrich each transaction
+                // (For MVP, you may use a test/sandbox token or skip if not available)
+                const plaidAccessTokenHeader = req.headers['x-plaid-access-token'];
+                const plaidAccessToken = Array.isArray(plaidAccessTokenHeader) 
+                    ? plaidAccessTokenHeader[0] 
+                    : plaidAccessTokenHeader;
+                console.log('🔍 Plaid integration check:', {
+                  hasAccessToken: !!plaidAccessToken,
+                  tokenPreview: plaidAccessToken ? `${plaidAccessToken.substring(0, 10)}...` : 'none'
+                });
                 
-                // Automatically categorize the newly uploaded transactions
+                if (plaidAccessToken && insertSuccess) {
+                  console.log('🚀 Starting Plaid enrichment for', transactions.length, 'transactions...');
+                  let enrichedCount = 0;
+                  let failedCount = 0;
+                  
+                  for (const tx of transactions) {
+                    try {
+                      console.log(`  📝 Enriching: ${tx.description.substring(0, 30)}...`);
+                      const plaidResult = await enrichTransactionWithPlaid({
+                        accessToken: plaidAccessToken,
+                        description: tx.description,
+                        amount: tx.amount,
+                        date: tx.posted_date,
+                      });
+                      
+                      if (plaidResult && plaidResult.plaidCategory) {
+                        console.log(`  ✅ Plaid found category: ${plaidResult.plaidCategory}`);
+                        // Update transaction with Plaid category
+                        await supabase.from('transactions').update({
+                          category: plaidResult.plaidCategory,
+                        }).eq('id', tx.id);
+                        enrichedCount++;
+                      } else {
+                        console.log(`  ⚠️  Plaid returned no category for: ${tx.description.substring(0, 30)}...`);
+                        failedCount++;
+                      }
+                    } catch (plaidErr) {
+                      console.log('❌ Plaid enrichment failed for transaction', tx.id, plaidErr);
+                      failedCount++;
+                    }
+                  }
+                  
+                  console.log(`🎯 Plaid enrichment complete: ${enrichedCount} enriched, ${failedCount} failed`);
+                } else {
+                  if (!plaidAccessToken) {
+                    console.log('⏭️  Skipping Plaid enrichment - no access token provided');
+                  } else {
+                    console.log('⏭️  Skipping Plaid enrichment - transactions not successfully inserted');
+                  }
+                }
+                // --- END Plaid enrichment ---
+                // Automatically categorize the newly uploaded transactions (local fallback)
                 console.log('Running automatic categorization after CSV upload...');
                 const categorizationResults = await categorizeTransactions();
                 
@@ -1323,14 +1469,16 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                     .map(([category, count]) => `${count} ${category}`)
                     .join(', ');
                 
-                const message = categorizationResults.total > 0 
+                const message = insertSuccess 
                     ? `${transactions.length} transactions uploaded and automatically categorized! ${categoryBreakdown}${categorizationResults.uncategorized > 0 ? `, ${categorizationResults.uncategorized} General` : ''}.`
-                    : `${transactions.length} transactions uploaded successfully.`;
+                    : `🚧 Development mode: ${transactions.length} transactions processed but not stored due to database issues.`;
                 
                 res.status(200).json({ 
                     message,
                     accessToken: accessToken,
-                    categorization: categorizationResults
+                    categorization: categorizationResults,
+                    userId: userId,
+                    stored: insertSuccess
                 });
 
             } catch (error: any) {

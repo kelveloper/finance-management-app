@@ -16,7 +16,7 @@ import {
   TrendingUp, 
   CircleAlert as AlertCircle 
 } from 'lucide-react-native';
-import { getApiUrl } from '../../utils/environment';
+import { getApiUrl, getDevUserId } from '../../utils/environment';
 import { useSession } from '../../hooks/useSession';
 import moment from 'moment';
 
@@ -83,7 +83,7 @@ export default function CategoriesScreen() {
     queryFn: async () => {
       const response = await fetch(`${getApiUrl()}/api/data`, {
         headers: {
-          'x-user-id': userId || 'mock_user_123',
+          'x-user-id': userId || getDevUserId(),
         }
       });
       if (!response.ok) {
