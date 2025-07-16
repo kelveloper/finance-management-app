@@ -146,3 +146,52 @@ export interface AILearningData {
     timestamp: string;
   }>;
 }
+
+// Goal Navigator Types
+export interface Goal {
+  goal_id: string;
+  user_id: string;
+  goal_type: 'HOUSE' | 'CAR' | 'DEBT' | 'VACATION' | 'EMERGENCY' | 'CUSTOM';
+  name: string;
+  target_amount: number;
+  current_amount_saved: number;
+  target_date: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'PAUSED';
+  metadata: {
+    down_payment_percentage?: number;
+    apr?: number;
+    priority: 'high' | 'medium' | 'low';
+    category: string;
+    monthly_contribution?: number;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WeeklyChallenge {
+  challenge_id: string;
+  goal_id: string;
+  week_of_year: number;
+  year: number;
+  description: string;
+  category_to_track: string;
+  spend_limit: number;
+  current_spending: number;
+  status: 'ACTIVE' | 'COMPLETED' | 'FAILED';
+  reward_message?: string;
+  created_at: string;
+}
+
+export interface AIRecommendation {
+  id: string;
+  goal_id: string;
+  type: 'reduce_spending' | 'increase_income' | 'optimize_timeline' | 'budget_reallocation';
+  category: string;
+  current_monthly_spending: number;
+  suggested_reduction: number;
+  potential_monthly_savings: number;
+  impact_description: string;
+  confidence_score: number;
+  user_feedback?: 'helpful' | 'not_helpful' | 'tried';
+  created_at: string;
+}

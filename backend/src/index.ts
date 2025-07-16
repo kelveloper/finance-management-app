@@ -4,12 +4,12 @@ import dotenv from 'dotenv';
 import moment from 'moment';
 import multer from 'multer';
 import csv from 'csv-parser';
-import { enrichTransactionWithPlaid } from './services/plaid-enrichment';
 import { Readable } from 'stream';
 import { supabase } from './supabase';
 import { detectRecurringTransactions } from './services/recurring';
 import { PersonalizedAI } from './services/personalized-ai';
 import { UserProfileService } from './services/user-profile';
+import { GoalNavigatorService } from './services/goal-navigator';
 import { categorizeTransactions, learnFromUserFeedback, getSubcategoryStructure } from './categorize-transactions';
 import { Transaction } from '../../common/types';
 import bcrypt from 'bcrypt';
@@ -334,14 +334,10 @@ function getPlanningHorizon(personality: string): 'short' | 'medium' | 'long' {
 app.get('/api/data', (async (req: Request, res: Response) => {
     // For now, get user ID from header or default to mock user
     // In production, this would come from authenticated JWT token
-    let userId = req.headers['x-user-id'] as string;
+    const requestedUserId = req.headers['x-user-id'] as string || 'mock_user_123';
     
-    if (!userId) {
-        // Use the same date-based user ID generation as the upload endpoint
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        userId = `dev_user_${today.replace(/-/g, '')}`;
-        console.log(`🎯 Generated dev user ID for data fetch: ${userId}`);
-    }
+    // DEVELOPMENT ONLY: Always use dev_user_2025 to see test data
+    const userId = process.env.NODE_ENV === 'development' ? 'dev_user_2025' : requestedUserId;
 
     try {
         console.log(`🔍 Fetching transactions for user: ${userId}`);
@@ -407,6 +403,11 @@ app.get('/api/data', (async (req: Request, res: Response) => {
         const personalizedAI = new PersonalizedAI(transactions, userProfile);
         const personalizedInsights = personalizedAI.generatePersonalizedInsightsWithLearning();
         const smartGoalSuggestions = personalizedAI.generateSmartGoalSuggestions();
+        const spendingProfile = await personalizedAI.generateSpendingProfile();
+        
+        // Generate goal navigator insights
+        const goalNavigator = new GoalNavigatorService(transactions);
+        const goalSuggestions = goalNavigator.generateGoalSuggestions();
         
         // Mock account data to keep the frontend happy.
         const accounts = [{
@@ -424,7 +425,9 @@ app.get('/api/data', (async (req: Request, res: Response) => {
                 anomalies, 
                 recurring,
                 personalized: personalizedInsights,
-                smartGoals: smartGoalSuggestions
+                smartGoals: smartGoalSuggestions,
+                spendingProfile: spendingProfile,
+                goalSuggestions: goalSuggestions
             },
         });
 
@@ -1203,15 +1206,8 @@ interface ChaseCsvRow {
 }
 
 app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
-    // Generate or use consistent development userID for development phase
-    let userId = req.headers['x-user-id'] as string;
-    
-    if (!userId) {
-        // Generate a persistent dev user ID based on timestamp (changes daily)
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        userId = `dev_user_${today.replace(/-/g, '')}`;
-        console.log(`🎯 Generated dev user ID: ${userId}`);
-    } 
+    // Use consistent development userID for development phase
+    const userId = req.headers['x-user-id'] as string || 'dev_user_2025'; 
 
     // Development mode: Check if we should use real Supabase or mock data
     const hasSupabaseUrl = process.env.SUPABASE_URL && process.env.SUPABASE_URL.length > 0;
@@ -1284,17 +1280,17 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                         return; // Skip this row
                     }
                     
-                    // Generate unique transaction ID (numeric for database compatibility)
-                    const transactionId = Date.now() + transactions.length;
+                    // Generate unique transaction ID
+                    const transactionId = `${userId}_${Date.now()}_${transactions.length}`;
                     
                     transactions.push({
                         id: transactionId,
                         user_id: userId,
+                        account_id: 'chase-8793', // Default account ID for Chase uploads
                         posted_date: parsedDate,
                         description: descriptionValue.trim(),
                         amount: amount,
                         category: 'Uncategorized', // Will be categorized automatically by AI
-                        subcategory: null,
                         tag: null, // Will be tagged later by AI
                     });
                 }
@@ -1323,63 +1319,14 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                 console.log(`📤 Inserting ${transactions.length} new transactions...`);
                 
                 // Insert new ones with better error handling
-                console.log('📤 Attempting to insert transactions with structure:', Object.keys(transactions[0] || {}));
-                
-                // Try bulk insert first, if that fails, try individual inserts
-                let insertSuccess = false;
-                let insertError = null;
-                
-                try {
-                    const { data: insertData, error } = await supabase.from('transactions').insert(transactions);
+                const { error } = await supabase.from('transactions').insert(transactions);
+
                 if (error) {
-                        insertError = error;
-                        console.error('❌ Bulk insert failed:', error.message);
+                    console.error('❌ Supabase insert error:', error);
                     
-                        // If it's a schema cache error, try individual inserts
+                    // If it's a schema cache error, provide a development workaround
                     if (error.message.includes('schema cache') || error.message.includes('account_id')) {
-                            console.log('🔄 Trying individual transaction inserts to bypass schema cache...');
-                            
-                            let successCount = 0;
-                            let failCount = 0;
-                            
-                            for (const transaction of transactions) {
-                                try {
-                                    const { error: singleError } = await supabase
-                                        .from('transactions')
-                                        .insert(transaction);
-                                    
-                                    if (singleError) {
-                                        console.error(`❌ Failed to insert transaction ${transaction.id}:`, singleError.message);
-                                        failCount++;
-                                    } else {
-                                        successCount++;
-                                    }
-                                } catch (err) {
-                                    console.error(`❌ Exception inserting transaction ${transaction.id}:`, err);
-                                    failCount++;
-                                }
-                            }
-                            
-                            console.log(`📊 Individual insert results: ${successCount} successful, ${failCount} failed`);
-                            
-                            if (successCount > 0) {
-                                insertSuccess = true;
-                                console.log('✅ Successfully inserted transactions using individual inserts');
-                            } else {
-                                throw new Error('All individual inserts failed');
-                            }
-                        } else {
-                            throw error;
-                        }
-                    } else {
-                        insertSuccess = true;
-                        console.log('✅ Successfully inserted transactions using bulk insert');
-                    }
-                } catch (err) {
-                    console.error('❌ All insert methods failed:', err);
-                    
-                    // Fallback to development mode response
-                    console.log('🚧 All insert methods failed - providing development response');
+                        console.log('🚧 Schema cache issue detected - providing development response');
                         
                         const accessToken = new Date().getTime().toString();
                         const mockCategorization = {
@@ -1396,68 +1343,18 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                         };
                         
                         res.status(200).json({ 
-                        message: `🚧 Dev mode: ${transactions.length} transactions processed from CSV! Insert failed, using mock response.`,
+                            message: `🚧 Dev mode: ${transactions.length} transactions processed from CSV! Schema cache issue bypassed.`,
                             accessToken: accessToken,
                             categorization: mockCategorization,
-                        note: 'Development mode: CSV processed but not stored due to insert failures',
-                        userId: userId
+                            note: 'Development mode: CSV processed but not stored due to schema cache issue'
                         });
                         return;
                     }
-                // --- NEW: Plaid enrichment after upload ---
-                // If Plaid access token is available, try to enrich each transaction
-                // (For MVP, you may use a test/sandbox token or skip if not available)
-                const plaidAccessTokenHeader = req.headers['x-plaid-access-token'];
-                const plaidAccessToken = Array.isArray(plaidAccessTokenHeader) 
-                    ? plaidAccessTokenHeader[0] 
-                    : plaidAccessTokenHeader;
-                console.log('🔍 Plaid integration check:', {
-                  hasAccessToken: !!plaidAccessToken,
-                  tokenPreview: plaidAccessToken ? `${plaidAccessToken.substring(0, 10)}...` : 'none'
-                });
-                
-                if (plaidAccessToken && insertSuccess) {
-                  console.log('🚀 Starting Plaid enrichment for', transactions.length, 'transactions...');
-                  let enrichedCount = 0;
-                  let failedCount = 0;
-                  
-                  for (const tx of transactions) {
-                    try {
-                      console.log(`  📝 Enriching: ${tx.description.substring(0, 30)}...`);
-                      const plaidResult = await enrichTransactionWithPlaid({
-                        accessToken: plaidAccessToken,
-                        description: tx.description,
-                        amount: tx.amount,
-                        date: tx.posted_date,
-                      });
-                      
-                      if (plaidResult && plaidResult.plaidCategory) {
-                        console.log(`  ✅ Plaid found category: ${plaidResult.plaidCategory}`);
-                        // Update transaction with Plaid category
-                        await supabase.from('transactions').update({
-                          category: plaidResult.plaidCategory,
-                        }).eq('id', tx.id);
-                        enrichedCount++;
-                      } else {
-                        console.log(`  ⚠️  Plaid returned no category for: ${tx.description.substring(0, 30)}...`);
-                        failedCount++;
-                      }
-                    } catch (plaidErr) {
-                      console.log('❌ Plaid enrichment failed for transaction', tx.id, plaidErr);
-                      failedCount++;
-                    }
-                  }
-                  
-                  console.log(`🎯 Plaid enrichment complete: ${enrichedCount} enriched, ${failedCount} failed`);
-                } else {
-                  if (!plaidAccessToken) {
-                    console.log('⏭️  Skipping Plaid enrichment - no access token provided');
-                  } else {
-                    console.log('⏭️  Skipping Plaid enrichment - transactions not successfully inserted');
-                  }
+                    
+                    throw error;
                 }
-                // --- END Plaid enrichment ---
-                // Automatically categorize the newly uploaded transactions (local fallback)
+                
+                // Automatically categorize the newly uploaded transactions
                 console.log('Running automatic categorization after CSV upload...');
                 const categorizationResults = await categorizeTransactions();
                 
@@ -1469,16 +1366,14 @@ app.post('/api/upload-csv', upload.single('file'), (async (req, res) => {
                     .map(([category, count]) => `${count} ${category}`)
                     .join(', ');
                 
-                const message = insertSuccess 
+                const message = categorizationResults.total > 0 
                     ? `${transactions.length} transactions uploaded and automatically categorized! ${categoryBreakdown}${categorizationResults.uncategorized > 0 ? `, ${categorizationResults.uncategorized} General` : ''}.`
-                    : `🚧 Development mode: ${transactions.length} transactions processed but not stored due to database issues.`;
+                    : `${transactions.length} transactions uploaded successfully.`;
                 
                 res.status(200).json({ 
                     message,
                     accessToken: accessToken,
-                    categorization: categorizationResults,
-                    userId: userId,
-                    stored: insertSuccess
+                    categorization: categorizationResults
                 });
 
             } catch (error: any) {

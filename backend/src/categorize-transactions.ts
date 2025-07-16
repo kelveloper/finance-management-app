@@ -503,93 +503,56 @@ export const categorizeTransactions = async (): Promise<{
   // First, auto-learn from existing categorized transactions
   await autoLearnFromSimilarTransactions();
   
-  console.log('Fetching all transactions for categorization from Supabase...');
+  console.log('Fetching uncategorized transactions from Supabase...');
 
-  // Get ALL transactions to ensure complete categorization (using pagination to bypass 1000 limit)
-  let allTransactions: any[] = [];
-  let from = 0;
-  const pageSize = 1000;
-  
-  while (true) {
-    const { data: pageTransactions, error: pageError } = await supabase
-      .from('transactions')
-      .select('id, description, category, subcategory')
-      .range(from, from + pageSize - 1);
-    
-    if (pageError) {
-      console.error('Error fetching transactions page:', pageError);
-      throw pageError;
-    }
-    
-    if (!pageTransactions || pageTransactions.length === 0) {
-      break; // No more transactions
-    }
-    
-    allTransactions.push(...pageTransactions);
-    console.log(`📄 Fetched page: ${from + 1}-${from + pageTransactions.length} (${pageTransactions.length} transactions)`);
-    
-    if (pageTransactions.length < pageSize) {
-      break; // Last page
-    }
-    
-    from += pageSize;
+  const { data: transactions, error } = await supabase
+    .from('transactions')
+    .select('id, description, category, subcategory')
+    .or('category.is.null,category.eq.General,category.eq.Uncategorized');
+
+  if (error) {
+    console.error('Error fetching transactions:', error);
+    throw error;
   }
-  
-  const transactions = allTransactions;
 
   if (!transactions || transactions.length === 0) {
     console.log('No transactions to categorize.');
     return { total: 0, categorized: {}, subcategorized: {}, uncategorized: 0 };
   }
 
-  console.log(`Found ${transactions.length} total transactions.`);
-  console.log(`Processing transactions that need categorization...`);
+  console.log(`Found ${transactions.length} transactions to categorize.`);
 
   // Track categorization results
   const categoryStats: Record<string, number> = {};
   const subcategoryStats: Record<string, number> = {};
   let generalCount = 0;
 
-  const updates = transactions
-    .filter(t => {
-      // Only categorize transactions that are uncategorized, null, or have 'General' category
-      const needsCategorization = !t.category || 
-                                 t.category === 'General' || 
-                                 t.category === 'Uncategorized';
-      
-      if (!needsCategorization) {
-        console.log(`  - ID ${t.id}: ${t.description.substring(0, 50)}... -> Already categorized as ${t.category}`);
-      }
-      
-      return needsCategorization;
-    })
-    .map(t => {
-      const { category, subcategory } = getCategoryAndSubcategory(t.description);
-      
-      // Track stats
-      if (category === 'General') {
-        generalCount++;
-      } else {
-        categoryStats[category] = (categoryStats[category] || 0) + 1;
-        const subcatKey = `${category} > ${subcategory}`;
-        subcategoryStats[subcatKey] = (subcategoryStats[subcatKey] || 0) + 1;
-      }
+  const updates = transactions.map(t => {
+    const { category, subcategory } = getCategoryAndSubcategory(t.description);
+    
+    // Track stats
+    if (category === 'General') {
+      generalCount++;
+    } else {
+      categoryStats[category] = (categoryStats[category] || 0) + 1;
+      const subcatKey = `${category} > ${subcategory}`;
+      subcategoryStats[subcatKey] = (subcategoryStats[subcatKey] || 0) + 1;
+    }
 
-      console.log(`  - ID ${t.id}: ${t.description.substring(0, 50)}... -> ${category} > ${subcategory}`);
-      return supabase
-        .from('transactions')
-        .update({ 
-          category: category,
-          subcategory: subcategory
-        })
-        .eq('id', t.id);
-    });
+    console.log(`  - ID ${t.id}: ${t.description.substring(0, 50)}... -> ${category} > ${subcategory}`);
+    return supabase
+      .from('transactions')
+      .update({ 
+        category: category,
+        subcategory: subcategory
+      })
+      .eq('id', t.id);
+  });
 
   console.log('Updating categories and subcategories in Supabase...');
   await Promise.all(updates);
 
   console.log('🎯 Smart categorization with subcategories complete!');
-  console.log(`📊 Summary: ${updates.length} transactions categorized out of ${transactions.length} total transactions`);
   
   return {
     total: transactions.length,
