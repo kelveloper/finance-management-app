@@ -221,8 +221,7 @@ export default function GoalNavigatorScreen() {
             </View>
 
             <Text style={styles.challengeDescription}>
-              Spend less than $50 on food & drink this week to accelerate your
-              Emergency Fund goal
+              This week, let's challenge ourselves to spend less than $50 on food and drink to boost your Emergency Fund! Given your recent $34.77 Grubhub order, let's try to skip the delivery apps and stick to your healthy routine with Fresh&Co, all while keeping to your $50 budget.
             </Text>
 
             <View style={styles.challengeProgress}>

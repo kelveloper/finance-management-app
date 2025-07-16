@@ -115,6 +115,7 @@ interface Transaction {
   posted_date: string;
   category?: string;
   subcategory?: string;
+  merchant?: string; // Added merchant field
 }
 
 interface SubcategoryData {
@@ -158,6 +159,11 @@ interface DataResponse {
   };
 }
 
+// Helper: Generate a hardcoded MVP spending profile
+function generateMVPSpendingProfile(transactions: Transaction[]): string {
+  return `Hey Kelvin! Looks like you had quite the month with 213 Coinbase transactions in "Financial & Transfer - Cryptocurrency." That's a lot of action in the crypto world – are you chasing gains or just really into managing your digital assets?\nOn the food front, your recent Fresh&Co purchase shows you're making healthy choices, which you even marked as essential – awesome! It's a great balance, especially since your last McDonald's run was two weeks ago. Keep up the smart spending, whether it's on crypto or healthy eats!`;
+}
+
 export default function CategoriesScreen() {
   const { userId } = useSession();
   const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
@@ -189,75 +195,8 @@ export default function CategoriesScreen() {
   const personalizedInsights = data?.insights?.personalized ?? [];
   const aiSpendingProfile = data?.insights?.spendingProfile;
 
-  // Helper function to generate personal descriptions using AI or fallback to manual
-  const generatePersonalDescription = (topCategory: CategoryData, secondCategory: CategoryData, totalSpending: number) => {
-    // Use AI-generated description if available
-    if (aiSpendingProfile?.profileDescription) {
-      return aiSpendingProfile.profileDescription;
-    }
-
-    // Fallback to original logic if AI description is not available
-    const topName = topCategory.name.toLowerCase();
-    const secondName = secondCategory.name.toLowerCase();
-    const topPercentage = topCategory.percentage;
-    const secondPercentage = secondCategory.percentage;
-    
-    // Get recent transactions for more specific examples
-    const recentTopTransactions = topCategory.recentTransactions.slice(0, 3);
-    const recentSecondTransactions = secondCategory.recentTransactions.slice(0, 2);
-    
-    // Extract specific examples from transactions
-    const getTransactionExamples = (transactions: Transaction[]) => {
-      const examples = transactions.map(t => {
-        const desc = t.description.toLowerCase();
-        if (desc.includes('starbucks') || desc.includes('coffee')) return '☕ coffee runs';
-        if (desc.includes('uber') || desc.includes('lyft')) return '🚗 rides';
-        if (desc.includes('amazon')) return '📦 Amazon hauls';
-        if (desc.includes('netflix') || desc.includes('spotify')) return '🎬 streaming';
-        if (desc.includes('target') || desc.includes('walmart')) return '🛒 shopping trips';
-        if (desc.includes('restaurant') || desc.includes('grubhub') || desc.includes('doordash')) return '🍽️ dining out';
-        if (desc.includes('gas') || desc.includes('shell') || desc.includes('exxon')) return '⛽ gas stops';
-        return t.description.split(' ').slice(0, 3).join(' ').toLowerCase();
-      });
-      return [...new Set(examples)].slice(0, 2); // Remove duplicates and limit to 2
-    };
-    
-    const topExamples = getTransactionExamples(recentTopTransactions);
-    const secondExamples = getTransactionExamples(recentSecondTransactions);
-    
-    // Create fun, expressive descriptions based on spending patterns
-    if (topName.includes('food') || topName.includes('drink')) {
-      if (secondName.includes('entertainment')) {
-        return `You're a total foodie who can't resist a good meal! 🍕 ${topPercentage}% of your money goes to ${topExamples.join(' & ')}, plus another ${secondPercentage}% on ${secondExamples.join(' & ')}. You're all about that good life - great food and great vibes!`;
-      } else if (secondName.includes('shopping')) {
-        return `You're living your best life with food and shopping! 🛍️ ${topPercentage}% on ${topExamples.join(' & ')}, ${secondPercentage}% on ${secondExamples.join(' & ')}. You know how to treat yourself right!`;
-      } else {
-        return `Food is literally your love language! 🍔 ${topPercentage}% of your spending is all about ${topExamples.join(' & ')}. You're probably the friend everyone asks for restaurant recommendations!`;
-      }
-    } else if (topName.includes('shopping')) {
-      if (secondName.includes('food')) {
-        return `You're a shopping queen/king who also loves to eat! 👑 ${topPercentage}% on ${topExamples.join(' & ')}, ${secondPercentage}% on ${secondExamples.join(' & ')}. You've mastered the art of retail therapy and culinary adventures!`;
-      } else if (secondName.includes('entertainment')) {
-        return `You're living that bougie life! ✨ ${topPercentage}% on ${topExamples.join(' & ')}, ${secondPercentage}% on ${secondExamples.join(' & ')}. You know how to have fun and look good doing it!`;
-      } else {
-        return `Shopping is basically your superpower! 🦸‍♀️ ${topPercentage}% of your money goes to ${topExamples.join(' & ')}. You probably have the best wardrobe and home decor!`;
-      }
-    } else if (topName.includes('entertainment')) {
-      if (secondName.includes('food')) {
-        return `You're the life of the party! 🎉 ${topPercentage}% on ${topExamples.join(' & ')}, ${secondPercentage}% on ${secondExamples.join(' & ')}. You know how to have a good time and eat well while doing it!`;
-      } else if (secondName.includes('shopping')) {
-        return `You're all about that entertainment and style! 🎭 ${topPercentage}% on ${topExamples.join(' & ')}, ${secondPercentage}% on ${secondExamples.join(' & ')}. You're probably the most fun person to hang out with!`;
-      } else {
-        return `Entertainment is your jam! 🎵 ${topPercentage}% of your spending goes to ${topExamples.join(' & ')}. You're definitely the friend who always knows about the coolest events!`;
-      }
-    } else if (topName.includes('transportation')) {
-      return `You're always on the go! 🚀 ${topPercentage}% of your money goes to ${topExamples.join(' & ')}. You're probably the most mobile person in your friend group!`;
-    } else if (topName.includes('bills') || topName.includes('utilities')) {
-      return `You're the responsible adult in the room! 💪 ${topPercentage}% goes to ${topExamples.join(' & ')}. You know how to keep your life together - respect!`;
-    } else {
-      return `You're a unique spender! 🌟 ${topPercentage}% on ${topExamples.join(' & ')}, ${secondPercentage}% on ${secondExamples.join(' & ')}. You march to the beat of your own drum!`;
-    }
-  };
+  // Add this after transactions are loaded
+  const mvpSpendingProfile = useMemo(() => generateMVPSpendingProfile(transactions), [transactions]);
 
   // Enhanced merchant extraction with web retrieval context
   const extractMerchantFromDescription = (description: string): string => {
@@ -696,26 +635,8 @@ export default function CategoriesScreen() {
       
       // Create personal profile card if we have at least 2 categories
       if (sortedCategories.length >= 2) {
-        const topCategory = sortedCategories[0];
-        const secondCategory = sortedCategories[1];
-        
-        // Create a personal description based on top spending patterns
-        const personalDescription = generatePersonalDescription(topCategory, secondCategory, totalSpending);
-        
-        const personalCard: CategoryData = {
-          name: 'Your Spending Profile',
-          amount: topCategory.amount,
-          transactions: topCategory.transactions,
-          percentage: topCategory.percentage,
-          color: '#8B5CF6', // Purple for personal
-          icon: Heart, // Heart icon for personal
-          recentTransactions: topCategory.recentTransactions,
-          isPersonalCard: true,
-          personalDescription
-        };
-        
-        // Insert personal card at the beginning
-        setCategoryData([personalCard, ...sortedCategories]);
+        // Do not create a personalCard with personalDescription anymore
+        setCategoryData(sortedCategories);
       } else {
         setCategoryData(sortedCategories);
       }
@@ -874,9 +795,36 @@ export default function CategoriesScreen() {
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8B5CF6" />
         }
       >
+        {/* Spending Profile Card */}
+        <View style={{
+          backgroundColor: '#251B3A',
+          borderRadius: 20,
+          margin: 16,
+          padding: 20,
+          borderWidth: 1,
+          borderColor: '#8B5CF6',
+          flexDirection: 'row',
+          alignItems: 'flex-start'
+        }}>
+          <View style={{
+            width: 48, height: 48, borderRadius: 16, backgroundColor: '#8B5CF6',
+            alignItems: 'center', justifyContent: 'center', marginRight: 16
+          }}>
+            <Text style={{ fontSize: 28, color: '#fff' }}>♡</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#C4B5FD', fontWeight: 'bold', fontSize: 20, marginBottom: 6 }}>
+              Your Spending Profile
+            </Text>
+            <Text style={{ color: '#E0E7FF', fontSize: 16 }}>
+              {mvpSpendingProfile}
+            </Text>
+          </View>
+        </View>
+
         {/* Personal Insights */}
         {personalizedInsights.length > 0 && (
           <View style={styles.personalizedContainer}>
@@ -1126,14 +1074,7 @@ export default function CategoriesScreen() {
                             </Text>
                             
                             {/* Company Information */}
-                            {subcategory.merchantInfo.companyInfo && (
-                              <View style={styles.companyInfoContainer}>
-                                <Text style={styles.companyInfoTitle}>📋 Company Info:</Text>
-                                <Text style={styles.companyInfoText}>
-                                  {subcategory.merchantInfo.companyInfo}
-                                </Text>
-                              </View>
-                            )}
+                            {/* Removed companyInfo block since it's not defined in merchantInfo */}
                           </>
                         )}
                       </View>
