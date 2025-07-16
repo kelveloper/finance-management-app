@@ -50,13 +50,11 @@ const getTimeBasedGreeting = (
 };
 
 const GreetingComponent = ({ firstName }: { firstName: string | null }) => {
-  const { greeting, name } = getTimeBasedGreeting(firstName);
-
   return (
     <View style={styles.greetingContainer}>
-      <Text style={styles.greetingText}>{greeting}, </Text>
-      <Text style={styles.greetingName}>{name}</Text>
-      <Text style={styles.greetingName}>!</Text>
+      <Text style={styles.greetingText}>Good Evening Crypto Bro, </Text>
+      <Text style={styles.greetingName}>Kelvin</Text>
+      <Text style={styles.greetingName}>! :)</Text>
     </View>
   );
 };
