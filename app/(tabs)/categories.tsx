@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIn
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { PersonalizedInsight } from '../../common/types';
 import { 
   Utensils, 
   ShoppingBag, 
@@ -69,6 +70,7 @@ export default function CategoriesScreen() {
   const { userId } = useSession();
   const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
 
   // Fetch transaction data
   const { 
@@ -78,6 +80,9 @@ export default function CategoriesScreen() {
     refetch 
   } = useQuery<{
     transactions: Transaction[];
+    insights?: {
+      personalized: PersonalizedInsight[];
+    };
   }>({
     queryKey: ['financialData'],
     queryFn: async () => {
@@ -94,6 +99,7 @@ export default function CategoriesScreen() {
   });
 
   const transactions = data?.transactions ?? [];
+  const personalizedInsights = data?.insights?.personalized ?? [];
 
   // Process transactions into category data
   const categoryData = useMemo(() => {
@@ -163,6 +169,46 @@ export default function CategoriesScreen() {
     setSelectedCategory(category);
   };
 
+  const toggleInsightExpansion = (insightId: string) => {
+    setExpandedInsights(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(insightId)) {
+        // If clicking the same insight, close it
+        newSet.delete(insightId);
+      } else {
+        // If clicking a different insight, close all others and open this one
+        newSet.clear();
+        newSet.add(insightId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleInsightAction = async (insightId: string, action: 'follow' | 'ignore') => {
+    try {
+      const response = await fetch(`${getApiUrl()}/api/insights/feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId || getDevUserId(),
+        },
+        body: JSON.stringify({
+          insightId,
+          action,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (response.ok) {
+        // Remove the insight from the list after user action
+        // You could also update the state to mark it as dismissed
+        console.log(`Insight ${insightId} ${action}ed successfully`);
+      }
+    } catch (error) {
+      console.error('Error sending insight feedback:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -223,6 +269,71 @@ export default function CategoriesScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* Personal Insights */}
+        {personalizedInsights.length > 0 && (
+          <View style={styles.personalizedContainer}>
+            <Text style={styles.insightsTitle}>💡 Personal Insights</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.insightsScrollContainer}
+            >
+              {personalizedInsights.map((insight) => {
+                const isExpanded = expandedInsights.has(insight.id);
+                return (
+                  <View key={insight.id} style={[styles.insightCard, isExpanded && styles.insightCardExpanded]}>
+                    <TouchableOpacity
+                      onPress={() => toggleInsightExpansion(insight.id)}
+                      activeOpacity={0.8}
+                      style={styles.insightContent}
+                    >
+                      <View style={styles.insightHeader}>
+                        <Text style={styles.insightTitle}>{insight.title}</Text>
+                        <Text style={styles.expandIcon}>
+                          {isExpanded ? '▼' : '▶'}
+                        </Text>
+                      </View>
+                      <Text style={styles.insightMessage}>{insight.message}</Text>
+                      
+                      {insight.actionable_advice.length > 0 && (
+                        <Text style={styles.tapToExpand}>
+                          {isExpanded ? 'Tap to hide actions' : 'Tap to see what you can do'}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                    
+                    {isExpanded && insight.actionable_advice.length > 0 && (
+                      <View style={styles.expandedContent}>
+                        <View style={styles.adviceContainer}>
+                          <Text style={styles.adviceTitle}>💡 What you can do:</Text>
+                          {insight.actionable_advice.map((advice, index) => (
+                            <Text key={index} style={styles.adviceItem}>• {advice}</Text>
+                          ))}
+                        </View>
+                        
+                        <View style={styles.actionButtons}>
+                          <TouchableOpacity 
+                            style={[styles.actionButton, styles.followButton]}
+                            onPress={() => handleInsightAction(insight.id, 'follow')}
+                          >
+                            <Text style={styles.followButtonText}>I'll try this</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.actionButton, styles.ignoreButton]}
+                            onPress={() => handleInsightAction(insight.id, 'ignore')}
+                          >
+                            <Text style={styles.ignoreButtonText}>Not for me</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Categories List */}
         <View style={styles.categoriesList}>
           {categoryData.length === 0 ? (
@@ -578,5 +689,122 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#F9FAFB',
+  },
+  
+  // Personal Insights styles
+  personalizedContainer: {
+    marginBottom: 20,
+    marginHorizontal: 20,
+  },
+  insightsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#F9FAFB',
+    marginBottom: 15,
+  },
+  insightsScrollContainer: {
+    paddingRight: 20,
+  },
+  insightCard: {
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    padding: 20,
+    borderRadius: 16,
+    marginRight: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
+    width: 280,
+    height: 200,
+  },
+  insightCardExpanded: {
+    height: 'auto',
+    minHeight: 320,
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  insightTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#C4B5FD',
+    flex: 1,
+  },
+  expandIcon: {
+    fontSize: 14,
+    color: '#C4B5FD',
+    fontWeight: 'bold',
+  },
+  tapToExpand: {
+    fontSize: 12,
+    color: '#A78BFA',
+    fontStyle: 'italic',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  insightMessage: {
+    fontSize: 14,
+    color: '#E0E7FF',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  expandedContent: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(99, 102, 241, 0.3)',
+  },
+  adviceContainer: {
+    marginBottom: 16,
+  },
+  adviceTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#C4B5FD',
+    marginBottom: 6,
+  },
+  adviceItem: {
+    fontSize: 13,
+    color: '#DDD6FE',
+    marginBottom: 3,
+    paddingLeft: 8,
+    lineHeight: 18,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 'auto',
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  followButton: {
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.4)',
+  },
+  followButtonText: {
+    color: '#22C55E',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  ignoreButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+  },
+  ignoreButtonText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

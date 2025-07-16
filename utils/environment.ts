@@ -143,8 +143,8 @@ export function getApiUrl(): string {
  * Generates a consistent development user ID (same logic as backend)
  */
 export function getDevUserId(): string {
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  return `dev_user_${today.replace(/-/g, '')}`;
+  // Use a fixed user ID that matches the loaded transaction data
+  return 'dev_user_2025';
 }
 
 /**

@@ -42,12 +42,12 @@ const SessionGate = ({ children }: { children: React.ReactNode }) => {
       }
       // Note: In staging, we let users proceed through the normal flow after reaching welcome
     } 
-    // DEVELOPMENT: Route directly to transaction page for development work
+    // DEVELOPMENT: Allow onboarding flow access for testing
     else {
-      // Only redirect to tabs if user is not already in tabs or onboarding
-      if (!inOnboardingGroup && segments[0] !== '(tabs)') {
-        envLog('Development: Forcing redirect to transaction page for development');
-        router.replace('/(tabs)');
+      // Allow users to access onboarding flow if they explicitly navigate there
+      if (!inOnboardingGroup && segments[0] !== '(tabs)' && !accessToken) {
+        envLog('Development: Redirecting to welcome screen for onboarding access');
+        router.replace('/onboarding/welcome');
       }
     }
   }, [accessToken, isLoading, segments, router]);

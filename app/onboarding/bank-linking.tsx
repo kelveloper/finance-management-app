@@ -5,6 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { UploadCloud } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDevUserId } from '../../utils/environment';
+import { useRouter } from 'expo-router';
 
 // Web-compatible alert function
 const showAlert = (title: string, message: string, buttons?: Array<{text: string, onPress?: () => void, style?: 'default' | 'cancel' | 'destructive'}>) => {
@@ -23,6 +24,7 @@ const showAlert = (title: string, message: string, buttons?: Array<{text: string
 
 export default function BankLinkingScreen() {
   const { setAccessToken, userId } = useSession();
+  const router = useRouter();
   const [isCsvUploading, setIsCsvUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -88,6 +90,11 @@ export default function BankLinkingScreen() {
           
           showAlert('Success', message);
           await setAccessToken(data.accessToken);
+          
+          // Navigate to transaction page after successful upload
+          setTimeout(() => {
+            router.replace('/(tabs)');
+          }, 1000); // Small delay to ensure access token is set
         } else {
           // Handle specific error cases
           if (response.status === 400 && data.error?.includes('No valid transactions found')) {

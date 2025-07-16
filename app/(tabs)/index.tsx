@@ -757,7 +757,7 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('date');
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
-  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
+
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   
@@ -795,7 +795,7 @@ export default function HomeScreen() {
 
   const transactions = data?.transactions ?? [];
   const recurring = data?.insights?.recurring ?? [];
-  const personalizedInsights = data?.insights?.personalized ?? [];
+
 
   // Process and group transactions
   const { groupedTransactions, categories } = useMemo(() => {
@@ -849,17 +849,7 @@ export default function HomeScreen() {
     }
   }, [groupedTransactions]);
 
-  const toggleInsightExpansion = (insightId: string) => {
-    setExpandedInsights(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(insightId)) {
-        newSet.delete(insightId);
-      } else {
-        newSet.add(insightId);
-      }
-      return newSet;
-    });
-  };
+
 
   const toggleMonthExpansion = (monthKey: string) => {
     setExpandedMonths(prev => {
@@ -1049,45 +1039,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {personalizedInsights.length > 0 && (
-          <View style={styles.personalizedContainer}>
-            <Text style={styles.insightsTitle}>🧠 Personal AI Insights</Text>
-            {personalizedInsights.map((insight) => {
-              const isExpanded = expandedInsights.has(insight.id);
-              return (
-                <TouchableOpacity
-                  key={insight.id}
-                  style={[styles.insightCard, styles.personalizedCard]}
-                  onPress={() => toggleInsightExpansion(insight.id)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.personalizedHeader}>
-                    <Text style={styles.personalizedTitle}>{insight.title}</Text>
-                    <View style={styles.headerRight}>
-                      <Text style={styles.expandIcon}>
-                        {isExpanded ? '▼' : '▶'}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.personalizedMessage}>{insight.message}</Text>
-                  {insight.actionable_advice.length > 0 && (
-                    <Text style={styles.tapToExpand}>
-                      {isExpanded ? 'Tap to hide actions' : 'Tap to see actions you can take'}
-                    </Text>
-                  )}
-                  {isExpanded && insight.actionable_advice.length > 0 && (
-                    <View style={styles.adviceContainer}>
-                      <Text style={styles.adviceTitle}>💡 Actions you can take:</Text>
-                      {insight.actionable_advice.map((advice, index) => (
-                        <Text key={index} style={styles.adviceItem}>• {advice}</Text>
-                      ))}
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+
 
         <Text style={styles.title}>Transactions</Text>
         
@@ -1520,73 +1472,7 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 4,
   },
-  personalizedContainer: {
-    marginBottom: 20,
-    marginHorizontal: 20,
-  },
-  insightCard: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
-  },
-  personalizedCard: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    borderColor: 'rgba(99, 102, 241, 0.3)',
-  },
-  personalizedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  personalizedTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#C4B5FD',
-    flex: 1,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  expandIcon: {
-    fontSize: 14,
-    color: '#C4B5FD',
-    fontWeight: 'bold',
-  },
-  tapToExpand: {
-    fontSize: 12,
-    color: '#A78BFA',
-    fontStyle: 'italic',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  personalizedMessage: {
-    fontSize: 14,
-    color: '#E0E7FF',
-    marginBottom: 10,
-  },
-  adviceContainer: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(99, 102, 241, 0.3)',
-  },
-  adviceTitle: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#C4B5FD',
-    marginBottom: 4,
-  },
-  adviceItem: {
-    fontSize: 13,
-    color: '#DDD6FE',
-    marginBottom: 2,
-    paddingLeft: 8,
-  },
+
   essentialTag: {
     backgroundColor: 'rgba(59, 130, 246, 0.2)',
     color: '#60A5FA',
