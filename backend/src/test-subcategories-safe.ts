@@ -101,4 +101,4 @@ async function main() {
   console.log('🎯 Ready to test smart categorization with subcategories');
 }
 
-main().catch(console.error); 
+// main().catch(console.error); // Commented out to prevent auto-execution 

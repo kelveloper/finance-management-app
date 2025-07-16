@@ -78,6 +78,7 @@ CREATE INDEX idx_transactions_category ON transactions(category);
 ### Setup Instructions
 
 1. **Install Dependencies**: Ensure you have the Supabase client installed
+
    ```bash
    cd backend
    npm install @supabase/supabase-js
@@ -88,6 +89,7 @@ CREATE INDEX idx_transactions_category ON transactions(category);
 3. **Create Database Schema**: Run the SQL schema in your Supabase dashboard (SQL Editor)
 
 4. **Import Data**: Use the sync script to import CSV data
+
    ```bash
    npm run sync
    ```
@@ -112,6 +114,7 @@ This will parse the CSV file and insert transactions into your Supabase database
 ### Connection Verification
 
 The backend will log the connection status on startup:
+
 ```
 EmpowerFlow backend listening on port 8000, connected to Supabase.
 ```
@@ -127,4 +130,4 @@ EmpowerFlow backend listening on port 8000, connected to Supabase.
 
 - **Development**: Use Supabase's free tier with test data
 - **Production**: Upgrade to Supabase Pro for production workloads
-- **Data**: Always use sample/test data during development, never real financial information 
+- **Data**: Always use sample/test data during development, never real financial information

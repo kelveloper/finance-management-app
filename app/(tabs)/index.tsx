@@ -1,19 +1,40 @@
-import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, Platform, Alert, ScrollView, TextInput, Modal } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+  Platform,
+  Alert,
+  ScrollView,
+  TextInput,
+  Modal,
+} from 'react-native';
 import React, { useState, useMemo, useEffect } from 'react';
 import moment from 'moment';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Transaction, Insight, RecurringTransaction, PersonalizedInsight } from '../../common/types';
+import {
+  Transaction,
+  Insight,
+  RecurringTransaction,
+  PersonalizedInsight,
+} from '../../common/types';
 import { useSession } from '../../hooks/useSession';
 import { Ionicons } from '@expo/vector-icons';
 import { getApiUrl, getDevUserId } from '../../utils/environment';
 
 // Function to get time-based greeting in Eastern Time
-const getTimeBasedGreeting = (firstName: string | null): { greeting: string; name: string } => {
+const getTimeBasedGreeting = (
+  firstName: string | null
+): { greeting: string; name: string } => {
   if (!firstName) return { greeting: 'Good Morning', name: '' };
-  
-  const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+
+  const easternTime = new Date().toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+  });
   const currentHour = new Date(easternTime).getHours();
-  
+
   let greeting = '';
   if (currentHour >= 5 && currentHour < 12) {
     greeting = 'Good Morning';
@@ -24,13 +45,13 @@ const getTimeBasedGreeting = (firstName: string | null): { greeting: string; nam
   } else {
     greeting = 'Good Night';
   }
-  
+
   return { greeting, name: firstName };
 };
 
 const GreetingComponent = ({ firstName }: { firstName: string | null }) => {
   const { greeting, name } = getTimeBasedGreeting(firstName);
-  
+
   return (
     <View style={styles.greetingContainer}>
       <Text style={styles.greetingText}>{greeting}, </Text>
@@ -41,14 +62,14 @@ const GreetingComponent = ({ firstName }: { firstName: string | null }) => {
 };
 
 // Modern Filter Component
-const FilterBar = ({ 
-  searchQuery, 
-  setSearchQuery, 
-  selectedCategory, 
-  setSelectedCategory, 
-  sortBy, 
+const FilterBar = ({
+  searchQuery,
+  setSearchQuery,
+  selectedCategory,
+  setSelectedCategory,
+  sortBy,
   setSortBy,
-  categories 
+  categories,
 }: {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -69,42 +90,82 @@ const FilterBar = ({
           onChangeText={setSearchQuery}
         />
       </View>
-      
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScrollView}
+      >
         <TouchableOpacity
-          style={[styles.filterChip, selectedCategory === 'All' && styles.filterChipActive]}
+          style={[
+            styles.filterChip,
+            selectedCategory === 'All' && styles.filterChipActive,
+          ]}
           onPress={() => setSelectedCategory('All')}
         >
-          <Text style={[styles.filterChipText, selectedCategory === 'All' && styles.filterChipTextActive]}>
+          <Text
+            style={[
+              styles.filterChipText,
+              selectedCategory === 'All' && styles.filterChipTextActive,
+            ]}
+          >
             All
           </Text>
         </TouchableOpacity>
-        
+
         {categories.map((category) => (
           <TouchableOpacity
             key={category}
-            style={[styles.filterChip, selectedCategory === category && styles.filterChipActive]}
+            style={[
+              styles.filterChip,
+              selectedCategory === category && styles.filterChipActive,
+            ]}
             onPress={() => setSelectedCategory(category)}
           >
-            <Text style={[styles.filterChipText, selectedCategory === category && styles.filterChipTextActive]}>
+            <Text
+              style={[
+                styles.filterChipText,
+                selectedCategory === category && styles.filterChipTextActive,
+              ]}
+            >
               {category}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
-      
+
       <View style={styles.sortContainer}>
         <TouchableOpacity
-          style={[styles.sortButton, sortBy === 'date' && styles.sortButtonActive]}
+          style={[
+            styles.sortButton,
+            sortBy === 'date' && styles.sortButtonActive,
+          ]}
           onPress={() => setSortBy('date')}
         >
-          <Text style={[styles.sortButtonText, sortBy === 'date' && styles.sortButtonTextActive]}>Date</Text>
+          <Text
+            style={[
+              styles.sortButtonText,
+              sortBy === 'date' && styles.sortButtonTextActive,
+            ]}
+          >
+            Date
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.sortButton, sortBy === 'amount' && styles.sortButtonActive]}
+          style={[
+            styles.sortButton,
+            sortBy === 'amount' && styles.sortButtonActive,
+          ]}
           onPress={() => setSortBy('amount')}
         >
-          <Text style={[styles.sortButtonText, sortBy === 'amount' && styles.sortButtonTextActive]}>Amount</Text>
+          <Text
+            style={[
+              styles.sortButtonText,
+              sortBy === 'amount' && styles.sortButtonTextActive,
+            ]}
+          >
+            Amount
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -112,9 +173,21 @@ const FilterBar = ({
 };
 
 // Monthly Summary Component
-const MonthlySummary = ({ transactions, monthKey }: { transactions: Transaction[]; monthKey: string }) => {
-  const totalSpent = transactions.reduce((sum, t) => sum + (t.amount < 0 ? Math.abs(t.amount) : 0), 0);
-  const totalIncome = transactions.reduce((sum, t) => sum + (t.amount > 0 ? t.amount : 0), 0);
+const MonthlySummary = ({
+  transactions,
+  monthKey,
+}: {
+  transactions: Transaction[];
+  monthKey: string;
+}) => {
+  const totalSpent = transactions.reduce(
+    (sum, t) => sum + (t.amount < 0 ? Math.abs(t.amount) : 0),
+    0
+  );
+  const totalIncome = transactions.reduce(
+    (sum, t) => sum + (t.amount > 0 ? t.amount : 0),
+    0
+  );
   const transactionCount = transactions.length;
 
   return (
@@ -125,7 +198,9 @@ const MonthlySummary = ({ transactions, monthKey }: { transactions: Transaction[
       </View>
       <View style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>Income</Text>
-        <Text style={styles.summaryAmountPositive}>+${totalIncome.toFixed(2)}</Text>
+        <Text style={styles.summaryAmountPositive}>
+          +${totalIncome.toFixed(2)}
+        </Text>
       </View>
       <View style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>Transactions</Text>
@@ -136,33 +211,44 @@ const MonthlySummary = ({ transactions, monthKey }: { transactions: Transaction[
 };
 
 // Monthly Group Component
-const MonthlyGroup = ({ 
-  monthKey, 
-  transactions, 
-  isExpanded, 
+const MonthlyGroup = ({
+  monthKey,
+  transactions,
+  isExpanded,
   onToggle,
   onUpdateCategory,
-  onUpdateTag 
+  onUpdateTag,
+  loadingTags,
 }: {
   monthKey: string;
   transactions: Transaction[];
   isExpanded: boolean;
   onToggle: () => void;
   onUpdateCategory: (transaction: Transaction) => void;
-  onUpdateTag: (transactionId: string, newTag: 'essential' | 'discretionary') => void;
+  onUpdateTag: (
+    transactionId: string,
+    newTag: 'essential' | 'discretionary'
+  ) => void;
+  loadingTags: Set<string>;
 }) => {
   const monthDisplay = moment(monthKey, 'YYYY-MM').format('MMMM YYYY');
-  
+
   return (
     <View style={styles.monthlyGroupContainer}>
-      <TouchableOpacity style={styles.monthlyHeader} onPress={onToggle} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.monthlyHeader}
+        onPress={onToggle}
+        activeOpacity={0.7}
+      >
         <View style={styles.monthlyHeaderLeft}>
           <Text style={styles.monthlyHeaderText}>{monthDisplay}</Text>
-          <Text style={styles.monthlyHeaderCount}>{transactions.length} transactions</Text>
+          <Text style={styles.monthlyHeaderCount}>
+            {transactions.length} transactions
+          </Text>
         </View>
         <Text style={styles.monthlyHeaderIcon}>{isExpanded ? '▼' : '▶'}</Text>
       </TouchableOpacity>
-      
+
       {isExpanded && (
         <>
           <MonthlySummary transactions={transactions} monthKey={monthKey} />
@@ -173,6 +259,7 @@ const MonthlyGroup = ({
                 transaction={transaction}
                 onUpdateCategory={onUpdateCategory}
                 onUpdateTag={onUpdateTag}
+                loadingTags={loadingTags}
               />
             ))}
           </View>
@@ -183,12 +270,12 @@ const MonthlyGroup = ({
 };
 
 // Category Selection Modal Component
-const CategorySelectionModal = ({ 
-  visible, 
-  onClose, 
-  onSelectCategory, 
-  currentCategory, 
-  currentSubcategory 
+const CategorySelectionModal = ({
+  visible,
+  onClose,
+  onSelectCategory,
+  currentCategory,
+  currentSubcategory,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -197,8 +284,12 @@ const CategorySelectionModal = ({
   currentSubcategory?: string;
 }) => {
   const [categories, setCategories] = useState<any>({});
-  const [selectedMainCategory, setSelectedMainCategory] = useState<string>(currentCategory || '');
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>(currentSubcategory || '');
+  const [selectedMainCategory, setSelectedMainCategory] = useState<string>(
+    currentCategory || ''
+  );
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>(
+    currentSubcategory || ''
+  );
   const [showSubcategories, setShowSubcategories] = useState(false);
 
   const fetchCategories = async () => {
@@ -216,12 +307,12 @@ const CategorySelectionModal = ({
     console.log('📊 DEBUG: Current category selection state:', {
       selectedMainCategory: selectedMainCategory,
       selectedSubcategory: selectedSubcategory,
-      showSubcategories: showSubcategories
+      showSubcategories: showSubcategories,
     });
-    
+
     setSelectedMainCategory(category);
     setShowSubcategories(true);
-    
+
     console.log('✅ DEBUG: Updated to show subcategories for:', category);
   };
 
@@ -229,49 +320,64 @@ const CategorySelectionModal = ({
     console.log('🎯 DEBUG: Subcategory clicked:', subcategory);
     console.log('📊 DEBUG: Full selection:', {
       mainCategory: selectedMainCategory,
-      subcategory: subcategory
+      subcategory: subcategory,
     });
-    
+
     setSelectedSubcategory(subcategory);
     onSelectCategory(selectedMainCategory, subcategory);
-    
-    console.log('✅ DEBUG: Calling onSelectCategory with:', selectedMainCategory, subcategory);
-    
+
+    console.log(
+      '✅ DEBUG: Calling onSelectCategory with:',
+      selectedMainCategory,
+      subcategory
+    );
+
     handleClose();
   };
 
   const handleSkipSubcategory = () => {
     console.log('⏭️ DEBUG: Skip subcategory clicked');
     console.log('📊 DEBUG: Using main category only:', selectedMainCategory);
-    
+
     onSelectCategory(selectedMainCategory);
-    
-    console.log('✅ DEBUG: Calling onSelectCategory with main category only:', selectedMainCategory);
-    
+
+    console.log(
+      '✅ DEBUG: Calling onSelectCategory with main category only:',
+      selectedMainCategory
+    );
+
     handleClose();
   };
 
   const handleClose = () => {
     console.log('❌ DEBUG: Category modal closing');
     console.log('📊 DEBUG: Resetting modal state');
-    
+
     setShowSubcategories(false);
     setSelectedMainCategory(currentCategory || '');
     setSelectedSubcategory(currentSubcategory || '');
     onClose();
-    
+
     console.log('✅ DEBUG: Category modal closed and reset');
   };
 
   useEffect(() => {
-    console.log('🔄 MODAL DEBUG: CategorySelectionModal useEffect - visible changed to:', visible);
+    console.log(
+      '🔄 MODAL DEBUG: CategorySelectionModal useEffect - visible changed to:',
+      visible
+    );
     if (visible) {
       console.log('✅ MODAL DEBUG: Modal is visible, fetching categories...');
       fetchCategories();
     }
   }, [visible]);
 
-  console.log('🎭 MODAL DEBUG: CategorySelectionModal render - visible:', visible, 'returning early?', !visible);
+  console.log(
+    '🎭 MODAL DEBUG: CategorySelectionModal render - visible:',
+    visible,
+    'returning early?',
+    !visible
+  );
 
   if (!visible) {
     console.log('⏹️ MODAL DEBUG: Modal not visible, returning null');
@@ -292,7 +398,10 @@ const CategorySelectionModal = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.categoryList} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.categoryList}
+          showsVerticalScrollIndicator={false}
+        >
           {!showSubcategories ? (
             // Main categories
             Object.keys(categories).map((category) => (
@@ -300,14 +409,16 @@ const CategorySelectionModal = ({
                 key={category}
                 style={[
                   styles.categoryItem,
-                  currentCategory === category && styles.selectedCategoryItem
+                  currentCategory === category && styles.selectedCategoryItem,
                 ]}
                 onPress={() => handleMainCategorySelect(category)}
               >
-                <Text style={[
-                  styles.categoryText,
-                  currentCategory === category && styles.selectedCategoryText
-                ]}>
+                <Text
+                  style={[
+                    styles.categoryText,
+                    currentCategory === category && styles.selectedCategoryText,
+                  ]}
+                >
                   {category}
                 </Text>
                 <Ionicons name="chevron-forward" size={20} color="#6B7280" />
@@ -324,35 +435,44 @@ const CategorySelectionModal = ({
                   <Ionicons name="chevron-back" size={20} color="#34D399" />
                   <Text style={styles.backButtonText}>Back to Categories</Text>
                 </TouchableOpacity>
-                <Text style={styles.selectedCategoryLabel}>{selectedMainCategory}</Text>
+                <Text style={styles.selectedCategoryLabel}>
+                  {selectedMainCategory}
+                </Text>
               </View>
 
               <TouchableOpacity
                 style={styles.skipButton}
                 onPress={handleSkipSubcategory}
               >
-                <Text style={styles.skipButtonText}>Skip - Use "{selectedMainCategory}" only</Text>
+                <Text style={styles.skipButtonText}>
+                  Skip - Use "{selectedMainCategory}" only
+                </Text>
               </TouchableOpacity>
 
-              {categories[selectedMainCategory] && 
-                Object.keys(categories[selectedMainCategory]).map((subcategory) => (
-                  <TouchableOpacity
-                    key={subcategory}
-                    style={[
-                      styles.subcategoryItem,
-                      currentSubcategory === subcategory && styles.selectedSubcategoryItem
-                    ]}
-                    onPress={() => handleSubcategorySelect(subcategory)}
-                  >
-                    <Text style={[
-                      styles.subcategoryText,
-                      currentSubcategory === subcategory && styles.selectedSubcategoryText
-                    ]}>
-                      {subcategory}
-                    </Text>
-                  </TouchableOpacity>
-                ))
-              }
+              {categories[selectedMainCategory] &&
+                Object.keys(categories[selectedMainCategory]).map(
+                  (subcategory) => (
+                    <TouchableOpacity
+                      key={subcategory}
+                      style={[
+                        styles.subcategoryItem,
+                        currentSubcategory === subcategory &&
+                          styles.selectedSubcategoryItem,
+                      ]}
+                      onPress={() => handleSubcategorySelect(subcategory)}
+                    >
+                      <Text
+                        style={[
+                          styles.subcategoryText,
+                          currentSubcategory === subcategory &&
+                            styles.selectedSubcategoryText,
+                        ]}
+                      >
+                        {subcategory}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                )}
             </>
           )}
         </ScrollView>
@@ -362,13 +482,13 @@ const CategorySelectionModal = ({
 };
 
 // NEW: Preview Modal for Similar Transactions
-const SimilarTransactionsPreviewModal = ({ 
-  visible, 
-  onClose, 
+const SimilarTransactionsPreviewModal = ({
+  visible,
+  onClose,
   transactionId,
   category,
   subcategory,
-  onConfirmUpdates
+  onConfirmUpdates,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -379,54 +499,68 @@ const SimilarTransactionsPreviewModal = ({
 }) => {
   const [previewData, setPreviewData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(
+    new Set()
+  );
   const [selectAll, setSelectAll] = useState(true);
 
   const fetchPreview = async () => {
     console.log('🔍 DEBUG: fetchPreview called');
-    console.log('📊 DEBUG: Preview params:', { transactionId, category, subcategory });
-    
+    console.log('📊 DEBUG: Preview params:', {
+      transactionId,
+      category,
+      subcategory,
+    });
+
     if (!transactionId || !category) {
       console.log('❌ DEBUG: Missing required params for preview');
       return;
     }
-    
+
     setLoading(true);
     console.log('⏳ DEBUG: Starting preview fetch...');
-    
+
     try {
       const queryParams = new URLSearchParams({
         category: category,
-        ...(subcategory && { subcategory: subcategory })
+        ...(subcategory && { subcategory: subcategory }),
       });
-      
-      const response = await fetch(`${getApiUrl()}/api/transactions/${transactionId}/preview-similar?${queryParams}`, {
-        headers: {
-          'x-user-id': getDevUserId(),
+
+      const response = await fetch(
+        `${getApiUrl()}/api/transactions/${transactionId}/preview-similar?${queryParams}`,
+        {
+          headers: {
+            'x-user-id': getDevUserId(),
+          },
         }
-      });
-      
+      );
+
       if (!response.ok) {
         throw new Error('Failed to fetch preview');
       }
-      
+
       const data = await response.json();
       console.log('📊 DEBUG: Preview data received:', {
         totalCount: data.totalCount,
         patterns: data.patterns,
         proposedCategory: data.proposedCategory,
-        proposedSubcategory: data.proposedSubcategory
+        proposedSubcategory: data.proposedSubcategory,
       });
-      
+
       setPreviewData(data);
-      
+
       // Pre-select all similar transactions
-      const allIds = new Set<string>(data.similarTransactions.map((t: any) => t.id));
+      const allIds = new Set<string>(
+        data.similarTransactions.map((t: any) => t.id)
+      );
       setSelectedTransactions(allIds);
       setSelectAll(allIds.size === data.similarTransactions.length);
-      
-      console.log('✅ DEBUG: Preview loaded successfully with', data.totalCount, 'similar transactions');
-      
+
+      console.log(
+        '✅ DEBUG: Preview loaded successfully with',
+        data.totalCount,
+        'similar transactions'
+      );
     } catch (error) {
       console.error('❌ DEBUG: Error fetching preview:', error);
       Alert.alert('Error', 'Failed to preview similar transactions');
@@ -438,10 +572,10 @@ const SimilarTransactionsPreviewModal = ({
 
   const toggleTransaction = (transactionId: string) => {
     console.log('🔄 DEBUG: toggleTransaction called for ID:', transactionId);
-    
+
     const newSelected = new Set(selectedTransactions);
     const wasSelected = newSelected.has(transactionId);
-    
+
     if (wasSelected) {
       newSelected.delete(transactionId);
       console.log('➖ DEBUG: Deselected transaction:', transactionId);
@@ -449,69 +583,78 @@ const SimilarTransactionsPreviewModal = ({
       newSelected.add(transactionId);
       console.log('➕ DEBUG: Selected transaction:', transactionId);
     }
-    
+
     setSelectedTransactions(newSelected);
     setSelectAll(newSelected.size === previewData?.similarTransactions.length);
-    
+
     console.log('📊 DEBUG: Transaction selection updated:', {
       totalSelected: newSelected.size,
       totalAvailable: previewData?.similarTransactions.length,
-      isAllSelected: newSelected.size === previewData?.similarTransactions.length
+      isAllSelected:
+        newSelected.size === previewData?.similarTransactions.length,
     });
   };
 
   const toggleSelectAll = () => {
     console.log('🔄 DEBUG: toggleSelectAll called, current state:', selectAll);
-    
+
     if (selectAll) {
       console.log('➖ DEBUG: Deselecting all transactions');
       setSelectedTransactions(new Set());
     } else {
-      const allIds = new Set<string>(previewData?.similarTransactions.map((t: any) => t.id));
+      const allIds = new Set<string>(
+        previewData?.similarTransactions.map((t: any) => t.id)
+      );
       console.log('➕ DEBUG: Selecting all transactions, count:', allIds.size);
       setSelectedTransactions(allIds);
     }
-    
+
     setSelectAll(!selectAll);
-    
+
     console.log('✅ DEBUG: Select all toggled to:', !selectAll);
   };
 
   const handleConfirm = async () => {
     const selectedIds = Array.from(selectedTransactions);
-    const allTransactionIds = previewData?.similarTransactions.map((t: any) => t.id) || [];
-    const deselectedIds = allTransactionIds.filter((id: string) => !selectedIds.includes(id));
-    
+    const allTransactionIds =
+      previewData?.similarTransactions.map((t: any) => t.id) || [];
+    const deselectedIds = allTransactionIds.filter(
+      (id: string) => !selectedIds.includes(id)
+    );
+
     // Always include the original transaction that was selected for category change
     const finalTransactionIds = [...new Set([transactionId, ...selectedIds])];
-    
+
     console.log('🧠 NEGATIVE LEARNING DEBUG:', {
       originalTransactionId: transactionId,
       selectedFromPreview: selectedIds.length,
       deselectedCount: deselectedIds.length,
       finalUpdateCount: finalTransactionIds.length,
       category: category,
-      subcategory: subcategory
+      subcategory: subcategory,
     });
-    
+
     // Learn from negative feedback if there are deselected transactions
     if (deselectedIds.length > 0) {
       try {
         console.log('🔄 Calling negative learning API...');
-        const response = await fetch(`${getApiUrl()}/api/transactions/learn-negative`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-id': getDevUserId(),
-          },
-          body: JSON.stringify({
-            selectedTransactionId: transactionId,
-            deselectedTransactionIds: deselectedIds,
-            category: category,
-            subcategory: subcategory
-          })
-        });
-        
+        const response = await fetch(
+          `${getApiUrl()}/api/transactions/learn-negative`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-user-id': getDevUserId(),
+            },
+            body: JSON.stringify({
+              selectedTransactionId: transactionId,
+              deselectedTransactionIds: deselectedIds,
+              category: category,
+              subcategory: subcategory,
+            }),
+          }
+        );
+
         if (response.ok) {
           const result = await response.json();
           console.log('✅ Negative learning completed:', result);
@@ -522,7 +665,7 @@ const SimilarTransactionsPreviewModal = ({
         console.error('❌ Error calling negative learning API:', error);
       }
     }
-    
+
     // Proceed with the normal update, always including the original transaction
     onConfirmUpdates(finalTransactionIds);
   };
@@ -555,95 +698,116 @@ const SimilarTransactionsPreviewModal = ({
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#34D399" />
-            <Text style={styles.loadingText}>Finding similar transactions...</Text>
+            <Text style={styles.loadingText}>
+              Finding similar transactions...
+            </Text>
           </View>
         ) : previewData ? (
           <View style={styles.previewContainer}>
-            <ScrollView style={styles.previewContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.previewHeader}>
-              <Text style={styles.previewTitle}>
-                Found {previewData.totalCount} similar transactions
-              </Text>
-              <Text style={styles.previewSubtitle}>
-                Based on patterns: {previewData.patterns.join(', ')}
-              </Text>
-              <Text style={styles.previewCategory}>
-                Will be categorized as: {category}{subcategory ? ` > ${subcategory}` : ''}
-              </Text>
-            </View>
-
-            {previewData.totalCount > 0 ? (
-              <>
-                <View style={styles.selectAllContainer}>
-                  <TouchableOpacity
-                    style={styles.selectAllButton}
-                    onPress={toggleSelectAll}
-                  >
-                    <Ionicons
-                      name={selectAll ? "checkbox" : "checkbox-outline"}
-                      size={24}
-                      color="#34D399"
-                    />
-                    <Text style={styles.selectAllText}>
-                      {selectAll ? 'Deselect All' : 'Select All'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {previewData.similarTransactions.map((transaction: any) => (
-                  <TouchableOpacity
-                    key={transaction.id}
-                    style={[
-                      styles.previewTransactionItem,
-                      selectedTransactions.has(transaction.id) && styles.selectedTransactionItem
-                    ]}
-                    onPress={() => toggleTransaction(transaction.id)}
-                  >
-                    <View style={styles.transactionCheckbox}>
-                      <Ionicons
-                        name={selectedTransactions.has(transaction.id) ? "checkbox" : "checkbox-outline"}
-                        size={20}
-                        color="#34D399"
-                      />
-                    </View>
-                    <View style={styles.transactionDetails}>
-                      <Text style={styles.transactionDescription} numberOfLines={2}>
-                        {transaction.description}
-                      </Text>
-                      <View style={styles.transactionMeta}>
-                        <Text style={styles.transactionDate}>
-                          {moment(transaction.posted_date).format('MMM DD, YYYY')}
-                        </Text>
-                        <Text style={styles.transactionAmount}>
-                          ${Math.abs(transaction.amount).toFixed(2)}
-                        </Text>
-                      </View>
-                      <View style={styles.transactionCurrentCategory}>
-                        <Text style={styles.currentCategoryLabel}>
-                          Current: {transaction.category || 'Uncategorized'}
-                          {transaction.subcategory && ` > ${transaction.subcategory}`}
-                        </Text>
-                      </View>
-                      <View style={styles.matchingPatterns}>
-                        <Text style={styles.patternsLabel}>
-                          Matches: {transaction.matchingPatterns.join(', ')}
-                        </Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </>
-            ) : (
-              <View style={styles.noDataContainer}>
-                <Ionicons name="checkmark-circle" size={48} color="#34D399" />
-                <Text style={styles.noDataText}>All similar transactions are already correctly categorized!</Text>
-                <Text style={styles.noDataSubtext}>
-                  Found {previewData.patterns.length} matching patterns, but all similar transactions are already in "{category}{subcategory ? ` > ${subcategory}` : ''}"
+            <ScrollView
+              style={styles.previewContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.previewHeader}>
+                <Text style={styles.previewTitle}>
+                  Found {previewData.totalCount} similar transactions
+                </Text>
+                <Text style={styles.previewSubtitle}>
+                  Based on patterns: {previewData.patterns.join(', ')}
+                </Text>
+                <Text style={styles.previewCategory}>
+                  Will be categorized as: {category}
+                  {subcategory ? ` > ${subcategory}` : ''}
                 </Text>
               </View>
-            )}
+
+              {previewData.totalCount > 0 ? (
+                <>
+                  <View style={styles.selectAllContainer}>
+                    <TouchableOpacity
+                      style={styles.selectAllButton}
+                      onPress={toggleSelectAll}
+                    >
+                      <Ionicons
+                        name={selectAll ? 'checkbox' : 'checkbox-outline'}
+                        size={24}
+                        color="#34D399"
+                      />
+                      <Text style={styles.selectAllText}>
+                        {selectAll ? 'Deselect All' : 'Select All'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {previewData.similarTransactions.map((transaction: any) => (
+                    <TouchableOpacity
+                      key={transaction.id}
+                      style={[
+                        styles.previewTransactionItem,
+                        selectedTransactions.has(transaction.id) &&
+                          styles.selectedTransactionItem,
+                      ]}
+                      onPress={() => toggleTransaction(transaction.id)}
+                    >
+                      <View style={styles.transactionCheckbox}>
+                        <Ionicons
+                          name={
+                            selectedTransactions.has(transaction.id)
+                              ? 'checkbox'
+                              : 'checkbox-outline'
+                          }
+                          size={20}
+                          color="#34D399"
+                        />
+                      </View>
+                      <View style={styles.transactionDetails}>
+                        <Text
+                          style={styles.transactionDescription}
+                          numberOfLines={2}
+                        >
+                          {transaction.description}
+                        </Text>
+                        <View style={styles.transactionMeta}>
+                          <Text style={styles.transactionDate}>
+                            {moment(transaction.posted_date).format(
+                              'MMM DD, YYYY'
+                            )}
+                          </Text>
+                          <Text style={styles.transactionAmount}>
+                            ${Math.abs(transaction.amount).toFixed(2)}
+                          </Text>
+                        </View>
+                        <View style={styles.transactionCurrentCategory}>
+                          <Text style={styles.currentCategoryLabel}>
+                            Current: {transaction.category || 'Uncategorized'}
+                            {transaction.subcategory &&
+                              ` > ${transaction.subcategory}`}
+                          </Text>
+                        </View>
+                        <View style={styles.matchingPatterns}>
+                          <Text style={styles.patternsLabel}>
+                            Matches: {transaction.matchingPatterns.join(', ')}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Ionicons name="checkmark-circle" size={48} color="#34D399" />
+                  <Text style={styles.noDataText}>
+                    All similar transactions are already correctly categorized!
+                  </Text>
+                  <Text style={styles.noDataSubtext}>
+                    Found {previewData.patterns.length} matching patterns, but
+                    all similar transactions are already in "{category}
+                    {subcategory ? ` > ${subcategory}` : ''}"
+                  </Text>
+                </View>
+              )}
             </ScrollView>
-            
+
             {/* Action buttons always visible at bottom */}
             <View style={styles.previewActions}>
               <TouchableOpacity
@@ -655,15 +819,16 @@ const SimilarTransactionsPreviewModal = ({
               <TouchableOpacity
                 style={[
                   styles.confirmButton,
-                  previewData.totalCount === 0 && styles.updateOnlyButton
+                  previewData.totalCount === 0 && styles.updateOnlyButton,
                 ]}
                 onPress={handleConfirm}
               >
                 <Text style={styles.confirmButtonText}>
-                  {previewData.totalCount === 0 
-                    ? 'Update Original Transaction' 
-                    : `Update ${selectedTransactions.size + 1} Transaction${selectedTransactions.size !== 0 ? 's' : ''}`
-                  }
+                  {previewData.totalCount === 0
+                    ? 'Update Original Transaction'
+                    : `Update ${selectedTransactions.size + 1} Transaction${
+                        selectedTransactions.size !== 0 ? 's' : ''
+                      }`}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -679,25 +844,31 @@ const SimilarTransactionsPreviewModal = ({
 };
 
 // Modern Transaction Card Component
-const ModernTransactionCard = ({ 
-  transaction, 
-  onUpdateCategory, 
-  onUpdateTag 
+const ModernTransactionCard = ({
+  transaction,
+  onUpdateCategory,
+  onUpdateTag,
+  loadingTags,
 }: {
   transaction: Transaction;
   onUpdateCategory: (transaction: Transaction) => void;
-  onUpdateTag: (transactionId: string, newTag: 'essential' | 'discretionary') => void;
+  onUpdateTag: (
+    transactionId: string,
+    newTag: 'essential' | 'discretionary'
+  ) => void;
+  loadingTags: Set<string>;
 }) => {
   const isNegative = transaction.amount < 0;
   const displayAmount = Math.abs(transaction.amount);
-  
+  const isLoading = loadingTags.has(transaction.id);
+
   return (
     <View style={styles.modernTransactionCard}>
       <View style={styles.transactionInfo}>
         <Text style={styles.modernTransactionName} numberOfLines={1}>
           {transaction.description}
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.compactCategoryButton}
           onPress={() => onUpdateCategory(transaction)}
           activeOpacity={0.7}
@@ -715,30 +886,78 @@ const ModernTransactionCard = ({
           {moment(transaction.posted_date, 'YYYY-MM-DD').format('MMM D, YYYY')}
         </Text>
       </View>
-      
+
       <View style={styles.transactionRight}>
-        <Text style={[styles.modernTransactionAmount, isNegative ? styles.expenseAmount : styles.incomeAmount]}>
+        <Text
+          style={[
+            styles.modernTransactionAmount,
+            isNegative ? styles.expenseAmount : styles.incomeAmount,
+          ]}
+        >
           ${displayAmount.toFixed(2)}
         </Text>
-        
-        {transaction.tag && (
-          <View style={[styles.modernTag, transaction.tag === 'essential' ? styles.essentialTag : styles.discretionaryTag]}>
+
+        {isLoading ? (
+          <View style={styles.tagLoadingContainer}>
+            <ActivityIndicator size="small" color="#34D399" />
+            <Text style={styles.tagLoadingText}>Updating...</Text>
+          </View>
+        ) : transaction.tag ? (
+          <View
+            style={[
+              styles.modernTag,
+              transaction.tag === 'essential'
+                ? styles.essentialTag
+                : styles.discretionaryTag,
+            ]}
+          >
             <Text style={styles.modernTagText}>{transaction.tag}</Text>
           </View>
-        )}
-        
+        ) : null}
+
         <View style={styles.modernActionButtons}>
           <TouchableOpacity
-            style={[styles.modernTagButton, styles.modernEssentialButton]}
-            onPress={() => onUpdateTag(transaction.id, 'essential')}
+            style={[
+              styles.modernTagButton,
+              styles.modernEssentialButton,
+              transaction.tag === 'essential' && styles.activeTagButton,
+              isLoading && styles.disabledTagButton,
+            ]}
+            onPress={() =>
+              !isLoading && onUpdateTag(transaction.id, 'essential')
+            }
+            disabled={isLoading}
           >
-            <Text style={styles.modernTagButtonText}>Essential</Text>
+            <Text
+              style={[
+                styles.modernTagButtonText,
+                transaction.tag === 'essential' && styles.activeTagButtonText,
+              ]}
+            >
+              Essential
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.modernTagButton, styles.modernDiscretionaryButton]}
-            onPress={() => onUpdateTag(transaction.id, 'discretionary')}
+            style={[
+              styles.modernTagButton,
+              styles.modernDiscretionaryButton,
+              transaction.tag === 'discretionary' && styles.activeTagButton,
+              isLoading && styles.disabledTagButton,
+            ]}
+            onPress={() =>
+              !isLoading && onUpdateTag(transaction.id, 'discretionary')
+            }
+            disabled={isLoading}
           >
-            <Text style={styles.modernTagButtonText}>Optional</Text>
+            <Text
+              style={[
+                styles.modernTagButtonText,
+                transaction.tag === 'discretionary' &&
+                  styles.activeTagButtonText,
+              ]}
+            >
+              Optional
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -746,37 +965,35 @@ const ModernTransactionCard = ({
   );
 };
 
-
-
 export default function HomeScreen() {
   const { userId, firstName } = useSession();
   const queryClient = useQueryClient();
-  
+
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('date');
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
 
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
-  
+
+  // Track loading state for individual transaction tags
+  const [loadingTags, setLoadingTags] = useState<Set<string>>(new Set());
+
   // NEW: Preview Modal State
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewTransactionId, setPreviewTransactionId] = useState<string>('');
   const [previewCategory, setPreviewCategory] = useState<string>('');
   const [previewSubcategory, setPreviewSubcategory] = useState<string>('');
 
-  const { 
-    data, 
-    isLoading, 
-    error 
-  } = useQuery<{
+  const { data, isLoading, error } = useQuery<{
     transactions: Transaction[];
-    insights: { 
-      anomalies: Insight[], 
-      recurring: RecurringTransaction[],
-      personalized: PersonalizedInsight[]
+    insights: {
+      anomalies: Insight[];
+      recurring: RecurringTransaction[];
+      personalized: PersonalizedInsight[];
     };
   }>({
     queryKey: ['financialData'],
@@ -784,75 +1001,87 @@ export default function HomeScreen() {
       const response = await fetch(`${getApiUrl()}/api/data`, {
         headers: {
           'x-user-id': userId || getDevUserId(),
-        }
+        },
       });
       if (!response.ok) {
         throw new Error('Failed to fetch financial data from the server.');
       }
       return response.json();
-    }
+    },
   });
 
   const transactions = data?.transactions ?? [];
   const recurring = data?.insights?.recurring ?? [];
 
-
   // Process and group transactions
   const { groupedTransactions, categories } = useMemo(() => {
     let filteredTransactions = transactions;
-    
+
     // Apply search filter
     if (searchQuery) {
-      filteredTransactions = filteredTransactions.filter(t => 
-        t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (t.category && t.category.toLowerCase().includes(searchQuery.toLowerCase()))
+      filteredTransactions = filteredTransactions.filter(
+        (t) =>
+          t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (t.category &&
+            t.category.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
-    
+
     // Apply category filter
     if (selectedCategory !== 'All') {
-      filteredTransactions = filteredTransactions.filter(t => t.category === selectedCategory);
+      filteredTransactions = filteredTransactions.filter(
+        (t) => t.category === selectedCategory
+      );
     }
-    
+
     // Sort transactions
     filteredTransactions.sort((a, b) => {
       if (sortBy === 'date') {
-        return new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime();
+        return (
+          new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
+        );
       } else {
         return Math.abs(b.amount) - Math.abs(a.amount);
       }
     });
-    
+
     // Group by month
     const grouped = filteredTransactions.reduce((acc, transaction) => {
-      const monthKey = moment(transaction.posted_date, 'YYYY-MM-DD').format('YYYY-MM');
+      const monthKey = moment(transaction.posted_date, 'YYYY-MM-DD').format(
+        'YYYY-MM'
+      );
       if (!acc[monthKey]) {
         acc[monthKey] = [];
       }
       acc[monthKey].push(transaction);
       return acc;
     }, {} as Record<string, Transaction[]>);
-    
+
     // Get unique categories
-    const uniqueCategories = Array.from(new Set(
-      transactions.map(t => t.category).filter((category): category is string => Boolean(category))
-    )).sort();
-    
+    const uniqueCategories = Array.from(
+      new Set(
+        transactions
+          .map((t) => t.category)
+          .filter((category): category is string => Boolean(category))
+      )
+    ).sort();
+
     return { groupedTransactions: grouped, categories: uniqueCategories };
   }, [transactions, searchQuery, selectedCategory, sortBy]);
 
   // Auto-expand current month
   React.useEffect(() => {
     const currentMonth = moment().format('YYYY-MM');
-    if (groupedTransactions[currentMonth] && !expandedMonths.has(currentMonth)) {
+    if (
+      groupedTransactions[currentMonth] &&
+      !expandedMonths.has(currentMonth)
+    ) {
       setExpandedMonths(new Set([currentMonth]));
     }
   }, [groupedTransactions]);
 
-
-
   const toggleMonthExpansion = (monthKey: string) => {
-    setExpandedMonths(prev => {
+    setExpandedMonths((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(monthKey)) {
         newSet.delete(monthKey);
@@ -869,20 +1098,23 @@ export default function HomeScreen() {
       id: transaction.id,
       description: transaction.description.substring(0, 50) + '...',
       currentCategory: transaction.category,
-      currentSubcategory: transaction.subcategory
+      currentSubcategory: transaction.subcategory,
     });
-    
+
     setSelectedTransaction(transaction);
     setCategoryModalVisible(true);
-    
+
     console.log('✅ DEBUG: Category modal should be visible now');
   };
 
-  const handleCategorySelect = async (category: string, subcategory?: string) => {
+  const handleCategorySelect = async (
+    category: string,
+    subcategory?: string
+  ) => {
     console.log('🎯 DEBUG: handleCategorySelect called');
     console.log('📊 Selected category:', category);
     console.log('📊 Selected subcategory:', subcategory || 'none');
-    
+
     if (!selectedTransaction) {
       console.log('❌ DEBUG: No transaction selected!');
       return;
@@ -894,25 +1126,27 @@ export default function HomeScreen() {
       fromCategory: selectedTransaction.category,
       toCategory: category,
       fromSubcategory: selectedTransaction.subcategory,
-      toSubcategory: subcategory
+      toSubcategory: subcategory,
     });
 
     // Store the selection for preview
     setPreviewTransactionId(selectedTransaction.id);
     setPreviewCategory(category);
     setPreviewSubcategory(subcategory || '');
-    
+
     console.log('💾 DEBUG: Stored preview data:', {
       transactionId: selectedTransaction.id,
       category: category,
-      subcategory: subcategory || ''
+      subcategory: subcategory || '',
     });
-    
+
     // Close category modal and show preview modal
     setCategoryModalVisible(false);
     setPreviewModalVisible(true);
-    
-    console.log('🔄 DEBUG: Modals switched - category modal closed, preview modal opened');
+
+    console.log(
+      '🔄 DEBUG: Modals switched - category modal closed, preview modal opened'
+    );
   };
 
   const handleConfirmUpdates = async (selectedIds: string[]) => {
@@ -920,7 +1154,7 @@ export default function HomeScreen() {
     console.log('📝 Selected transaction IDs:', selectedIds);
     console.log('🎯 Category to apply:', previewCategory);
     console.log('🎯 Subcategory to apply:', previewSubcategory || 'none');
-    
+
     if (selectedIds.length === 0) {
       console.log('⚠️ DEBUG: No transactions selected, closing preview modal');
       setPreviewModalVisible(false);
@@ -929,45 +1163,61 @@ export default function HomeScreen() {
 
     try {
       console.log('🌐 DEBUG: Making API call to update transactions...');
-      
-      const requestBody = { 
+
+      const requestBody = {
         transactionIds: selectedIds,
         category: previewCategory,
-        subcategory: previewSubcategory || null
+        subcategory: previewSubcategory || null,
       };
-      
+
       console.log('📤 DEBUG: Request body:', requestBody);
-      
-      const response = await fetch(`${getApiUrl()}/api/transactions-bulk/update-selected`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-user-id': userId || getDevUserId(),
-        },
-        body: JSON.stringify(requestBody),
-      });
-      
-      console.log('📡 DEBUG: Response status:', response.status, response.statusText);
-      
+
+      const response = await fetch(
+        `${getApiUrl()}/api/transactions-bulk/update-selected`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': userId || getDevUserId(),
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      console.log(
+        '📡 DEBUG: Response status:',
+        response.status,
+        response.statusText
+      );
+
       if (!response.ok) {
         throw new Error('Failed to update transactions');
       }
-      
+
       const result = await response.json();
       console.log('📊 DEBUG: API response:', result);
-      
+
       // Invalidate the financial data query to refresh all screens
       queryClient.invalidateQueries({ queryKey: ['financialData'] });
-      
+
       console.log('🔄 DEBUG: Query cache invalidated');
-      console.log(`✅ DEBUG: Updated ${result.updatedCount} transactions to ${previewCategory}${previewSubcategory ? ` > ${previewSubcategory}` : ''}`);
-      
+      console.log(
+        `✅ DEBUG: Updated ${
+          result.updatedCount
+        } transactions to ${previewCategory}${
+          previewSubcategory ? ` > ${previewSubcategory}` : ''
+        }`
+      );
+
       Alert.alert(
-        'Success!', 
-        `Updated ${result.updatedCount} transaction${result.updatedCount !== 1 ? 's' : ''} to ${previewCategory}${previewSubcategory ? ` > ${previewSubcategory}` : ''}`,
+        'Success!',
+        `Updated ${result.updatedCount} transaction${
+          result.updatedCount !== 1 ? 's' : ''
+        } to ${previewCategory}${
+          previewSubcategory ? ` > ${previewSubcategory}` : ''
+        }`,
         [{ text: 'OK' }]
       );
-      
     } catch (error: any) {
       console.log('❌ DEBUG: Error updating transactions:', error);
       console.log('❌ DEBUG: Error message:', error.message);
@@ -978,21 +1228,53 @@ export default function HomeScreen() {
     }
   };
 
-  const handleUpdateTag = async (transactionId: string, newTag: 'essential' | 'discretionary') => {
+  const handleUpdateTag = async (
+    transactionId: string,
+    newTag: 'essential' | 'discretionary'
+  ) => {
     try {
-        const response = await fetch(`${getApiUrl()}/api/transactions/${transactionId}/tag`, {
-            method: 'PATCH',
-            headers: { 
-              'Content-Type': 'application/json',
-              'x-user-id': userId || getDevUserId(),
-            },
-            body: JSON.stringify({ tag: newTag }),
-        });
-        if (!response.ok) {
-            throw new Error('Failed to update tag');
+      // Add this transaction to loading state
+      setLoadingTags((prev) => new Set(prev).add(transactionId));
+
+      console.log(
+        `🏷️ Updating tag for transaction ${transactionId} to ${newTag}`
+      );
+
+      const response = await fetch(
+        `${getApiUrl()}/api/transactions/${transactionId}/tag`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': userId || getDevUserId(),
+          },
+          body: JSON.stringify({ tag: newTag }),
         }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to update tag');
+      }
+
+      // Update was successful, invalidate the query to refresh data
+      await queryClient.invalidateQueries(['financialData']);
+
+      console.log(
+        `✅ Successfully updated tag for transaction ${transactionId}`
+      );
     } catch (error: any) {
-        Alert.alert('Error', error.message || 'Could not update tag.');
+      console.error(
+        `❌ Error updating tag for transaction ${transactionId}:`,
+        error
+      );
+      Alert.alert('Error', error.message || 'Could not update tag.');
+    } finally {
+      // Remove this transaction from loading state
+      setLoadingTags((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(transactionId);
+        return newSet;
+      });
     }
   };
 
@@ -1017,32 +1299,48 @@ export default function HomeScreen() {
 
   // DEBUG: Modal state logging
   console.log('🔍 RENDER DEBUG: categoryModalVisible =', categoryModalVisible);
-  console.log('🔍 RENDER DEBUG: selectedTransaction =', selectedTransaction?.id);
+  console.log(
+    '🔍 RENDER DEBUG: selectedTransaction =',
+    selectedTransaction?.id
+  );
   console.log('🔍 RENDER DEBUG: previewModalVisible =', previewModalVisible);
-  console.log('🎯 MODAL DEBUG: About to render CategorySelectionModal with visible =', categoryModalVisible);
-  console.log('🎯 PREVIEW DEBUG: About to render SimilarTransactionsPreviewModal with visible =', previewModalVisible);
+  console.log(
+    '🎯 MODAL DEBUG: About to render CategorySelectionModal with visible =',
+    categoryModalVisible
+  );
+  console.log(
+    '🎯 PREVIEW DEBUG: About to render SimilarTransactionsPreviewModal with visible =',
+    previewModalVisible
+  );
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <GreetingComponent firstName={firstName} />
-        
+
         {recurring.length > 0 && (
           <View style={styles.recurringContainer}>
             <Text style={styles.insightsTitle}>Upcoming Bills</Text>
             {recurring.map((item) => (
-              <View key={`${item.name}-${item.nextDate}`} style={styles.recurringItem}>
+              <View
+                key={`${item.name}-${item.nextDate}`}
+                style={styles.recurringItem}
+              >
                 <Text style={styles.recurringName}>{item.name}</Text>
-                <Text style={styles.recurringAmount}>~${item.amount.toFixed(2)} on {moment(item.nextDate, 'YYYY-MM-DD').format('MMM D')}</Text>
+                <Text style={styles.recurringAmount}>
+                  ~${item.amount.toFixed(2)} on{' '}
+                  {moment(item.nextDate, 'YYYY-MM-DD').format('MMM D')}
+                </Text>
               </View>
             ))}
           </View>
         )}
 
-
-
         <Text style={styles.title}>Transactions</Text>
-        
+
         <FilterBar
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -1065,11 +1363,12 @@ export default function HomeScreen() {
               onToggle={() => toggleMonthExpansion(monthKey)}
               onUpdateCategory={handleUpdateCategory}
               onUpdateTag={handleUpdateTag}
+              loadingTags={loadingTags}
             />
           ))
         )}
       </ScrollView>
-      
+
       <CategorySelectionModal
         visible={categoryModalVisible}
         onClose={() => setCategoryModalVisible(false)}
@@ -1122,7 +1421,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 16,
   },
-  
+
   // Greeting styles
   greetingContainer: {
     flexDirection: 'row',
@@ -1415,6 +1714,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: 'white',
     fontWeight: 'bold',
+  },
+  activeTagButton: {
+    borderWidth: 1,
+    borderColor: '#34D399',
+    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+  },
+  activeTagButtonText: {
+    color: '#34D399',
+    fontWeight: '600',
+  },
+  disabledTagButton: {
+    opacity: 0.5,
+  },
+  tagLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  tagLoadingText: {
+    fontSize: 12,
+    color: '#34D399',
+    marginLeft: 4,
   },
   modernEssentialButton: {
     backgroundColor: '#3B82F6',

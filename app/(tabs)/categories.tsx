@@ -529,8 +529,6 @@ export default function CategoriesScreen() {
     return insights;
   };
 
-
-
   // State for enhanced category data with subcategorization
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
   const [isProcessingCategories, setIsProcessingCategories] = useState(false);

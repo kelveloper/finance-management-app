@@ -38,4 +38,4 @@ async function testSubcategories() {
   }
 }
 
-testSubcategories(); 
+// testSubcategories(); // Commented out to prevent auto-execution 

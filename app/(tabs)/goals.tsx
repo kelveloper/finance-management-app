@@ -1,7 +1,24 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Target, Plus, Calendar, DollarSign, Trophy, X, ChevronRight } from 'lucide-react-native';
+import {
+  Target,
+  Plus,
+  Calendar,
+  DollarSign,
+  Trophy,
+  X,
+  ChevronRight,
+} from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Transaction, SmartGoalSuggestion } from '../../common/types';
 import { useSession } from '../../hooks/useSession';
@@ -36,7 +53,7 @@ export default function GoalNavigatorScreen() {
       target_date: '2025-12-31',
       status: 'ACTIVE',
       priority: 'high',
-      monthly_contribution: 250
+      monthly_contribution: 250,
     },
     {
       goal_id: '2',
@@ -46,15 +63,15 @@ export default function GoalNavigatorScreen() {
       target_date: '2025-07-15',
       status: 'ACTIVE',
       priority: 'medium',
-      monthly_contribution: 300
-    }
+      monthly_contribution: 300,
+    },
   ]);
 
   // Fetch smart goal suggestions
   const { data: transactionData } = useQuery<{
     transactions: Transaction[];
-    insights: { 
-      smartGoals: SmartGoalSuggestion[]
+    insights: {
+      smartGoals: SmartGoalSuggestion[];
     };
   }>({
     queryKey: ['financialData'],
@@ -62,13 +79,13 @@ export default function GoalNavigatorScreen() {
       const response = await fetch(`${getApiUrl()}/api/data`, {
         headers: {
           'x-user-id': userId || getDevUserId(),
-        }
+        },
       });
       if (!response.ok) {
         throw new Error('Failed to fetch financial data');
       }
       return response.json();
-    }
+    },
   });
 
   const smartGoals = transactionData?.insights?.smartGoals ?? [];
@@ -90,24 +107,27 @@ export default function GoalNavigatorScreen() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return '#EF4444';
-      case 'medium': return '#F59E0B';
-      case 'low': return '#10B981';
-      default: return '#64748B';
+      case 'high':
+        return '#EF4444';
+      case 'medium':
+        return '#F59E0B';
+      case 'low':
+        return '#10B981';
+      default:
+        return '#64748B';
     }
   };
 
-  const activeGoal = goals.find(g => g.status === 'ACTIVE');
+  const activeGoal = goals.find((g) => g.status === 'ACTIVE');
 
   return (
     <View style={styles.container}>
       {/* Header */}
-      <LinearGradient
-        colors={['#0F172A', '#1E293B']}
-        style={styles.header}
-      >
+      <LinearGradient colors={['#0F172A', '#1E293B']} style={styles.header}>
         <Text style={styles.headerTitle}>Goal Navigator</Text>
-        <Text style={styles.headerSubtitle}>AI-powered financial goal achievement</Text>
+        <Text style={styles.headerSubtitle}>
+          AI-powered financial goal achievement
+        </Text>
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -119,10 +139,23 @@ export default function GoalNavigatorScreen() {
                 <View style={styles.goalLeft}>
                   <Text style={styles.activeGoalName}>{activeGoal.name}</Text>
                   <View style={styles.goalMeta}>
-                    <View style={[styles.priorityDot, { backgroundColor: getPriorityColor(activeGoal.priority) }]} />
-                    <Text style={styles.goalMetaText}>{activeGoal.priority} priority</Text>
+                    <View
+                      style={[
+                        styles.priorityDot,
+                        {
+                          backgroundColor: getPriorityColor(
+                            activeGoal.priority
+                          ),
+                        },
+                      ]}
+                    />
+                    <Text style={styles.goalMetaText}>
+                      {activeGoal.priority} priority
+                    </Text>
                     <Calendar size={12} color="#94A3B8" />
-                    <Text style={styles.goalMetaText}>{formatDate(activeGoal.target_date)}</Text>
+                    <Text style={styles.goalMetaText}>
+                      {formatDate(activeGoal.target_date)}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -130,23 +163,31 @@ export default function GoalNavigatorScreen() {
               <View style={styles.progressSection}>
                 <View style={styles.progressHeader}>
                   <Text style={styles.progressAmount}>
-                    {formatCurrency(activeGoal.current_amount_saved)} / {formatCurrency(activeGoal.target_amount)}
+                    {formatCurrency(activeGoal.current_amount_saved)} /{' '}
+                    {formatCurrency(activeGoal.target_amount)}
                   </Text>
-                  <Text style={styles.progressPercentage}>{getProgressPercentage(activeGoal)}%</Text>
+                  <Text style={styles.progressPercentage}>
+                    {getProgressPercentage(activeGoal)}%
+                  </Text>
                 </View>
-                
+
                 <View style={styles.progressBarContainer}>
                   <View style={styles.progressBar}>
-                    <View style={[
-                      styles.progressFill, 
-                      { width: `${getProgressPercentage(activeGoal)}%` }
-                    ]} />
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${getProgressPercentage(activeGoal)}%` },
+                      ]}
+                    />
                   </View>
                 </View>
 
                 <View style={styles.progressFooter}>
                   <Text style={styles.remainingAmount}>
-                    {formatCurrency(activeGoal.target_amount - activeGoal.current_amount_saved)} remaining
+                    {formatCurrency(
+                      activeGoal.target_amount - activeGoal.current_amount_saved
+                    )}{' '}
+                    remaining
                   </Text>
                   <Text style={styles.monthlyContribution}>
                     {formatCurrency(activeGoal.monthly_contribution)}/month
@@ -165,13 +206,23 @@ export default function GoalNavigatorScreen() {
                 <Trophy size={20} color="#F59E0B" />
                 <Text style={styles.challengeTitle}>This Week's Challenge</Text>
               </View>
-              <View style={[styles.challengeStatus, { backgroundColor: '#F59E0B20' }]}>
-                <Text style={[styles.challengeStatusText, { color: '#F59E0B' }]}>ACTIVE</Text>
+              <View
+                style={[
+                  styles.challengeStatus,
+                  { backgroundColor: '#F59E0B20' },
+                ]}
+              >
+                <Text
+                  style={[styles.challengeStatusText, { color: '#F59E0B' }]}
+                >
+                  ACTIVE
+                </Text>
               </View>
             </View>
 
             <Text style={styles.challengeDescription}>
-              Spend less than $50 on food & drink this week to accelerate your Emergency Fund goal
+              Spend less than $50 on food & drink this week to accelerate your
+              Emergency Fund goal
             </Text>
 
             <View style={styles.challengeProgress}>
@@ -179,12 +230,14 @@ export default function GoalNavigatorScreen() {
                 <Text style={styles.challengeSpent}>Spent: $23.50</Text>
                 <Text style={styles.challengeLimit}>Limit: $50.00</Text>
               </View>
-              
+
               <View style={styles.challengeProgressBar}>
-                <View style={[
-                  styles.challengeProgressFill,
-                  { width: '47%', backgroundColor: '#10B981' }
-                ]} />
+                <View
+                  style={[
+                    styles.challengeProgressFill,
+                    { width: '47%', backgroundColor: '#10B981' },
+                  ]}
+                />
               </View>
 
               <Text style={styles.challengeRemaining}>$26.50 remaining</Text>
@@ -199,12 +252,14 @@ export default function GoalNavigatorScreen() {
             <Text style={styles.sectionSubtitle}>
               Based on your spending patterns
             </Text>
-            
+
             <View style={styles.smartGoalsList}>
               {smartGoals.map((goal) => (
                 <View key={goal.id} style={styles.smartGoalCard}>
                   <Text style={styles.smartGoalTitle}>{goal.title}</Text>
-                  <Text style={styles.smartGoalDescription}>{goal.description}</Text>
+                  <Text style={styles.smartGoalDescription}>
+                    {goal.description}
+                  </Text>
                   <View style={styles.smartGoalDetails}>
                     <Text style={styles.smartGoalAmount}>
                       {formatCurrency(goal.suggested_amount)}
@@ -213,7 +268,9 @@ export default function GoalNavigatorScreen() {
                       {goal.timeframe_months} months
                     </Text>
                   </View>
-                  <Text style={styles.smartGoalReasoning}>{goal.reasoning}</Text>
+                  <Text style={styles.smartGoalReasoning}>
+                    {goal.reasoning}
+                  </Text>
                   <TouchableOpacity style={styles.createGoalButton}>
                     <Plus size={16} color="#10B981" />
                     <Text style={styles.createGoalButtonText}>Create Goal</Text>
@@ -244,26 +301,40 @@ export default function GoalNavigatorScreen() {
                   <View style={styles.goalCardLeft}>
                     <Text style={styles.goalCardName}>{goal.name}</Text>
                     <View style={styles.goalCardMeta}>
-                      <View style={[styles.priorityDot, { backgroundColor: getPriorityColor(goal.priority) }]} />
-                      <Text style={styles.goalCardMetaText}>{goal.priority}</Text>
+                      <View
+                        style={[
+                          styles.priorityDot,
+                          { backgroundColor: getPriorityColor(goal.priority) },
+                        ]}
+                      />
+                      <Text style={styles.goalCardMetaText}>
+                        {goal.priority}
+                      </Text>
                       <Text style={styles.goalCardMetaText}>•</Text>
-                      <Text style={styles.goalCardMetaText}>{formatDate(goal.target_date)}</Text>
+                      <Text style={styles.goalCardMetaText}>
+                        {formatDate(goal.target_date)}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.goalCardRight}>
-                    <Text style={styles.goalCardProgress}>{getProgressPercentage(goal)}%</Text>
+                    <Text style={styles.goalCardProgress}>
+                      {getProgressPercentage(goal)}%
+                    </Text>
                     <Text style={styles.goalCardAmount}>
-                      {formatCurrency(goal.current_amount_saved)} / {formatCurrency(goal.target_amount)}
+                      {formatCurrency(goal.current_amount_saved)} /{' '}
+                      {formatCurrency(goal.target_amount)}
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.progressBarContainer}>
                   <View style={styles.progressBar}>
-                    <View style={[
-                      styles.progressFill, 
-                      { width: `${getProgressPercentage(goal)}%` }
-                    ]} />
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${getProgressPercentage(goal)}%` },
+                      ]}
+                    />
                   </View>
                 </View>
               </View>
@@ -313,7 +384,7 @@ export default function GoalNavigatorScreen() {
               />
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.createButton}
               onPress={() => {
                 Alert.alert('Success', 'Goal creation feature coming soon!');
@@ -327,8 +398,8 @@ export default function GoalNavigatorScreen() {
       </Modal>
     </View>
   );
-}const
- styles = StyleSheet.create({
+}
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111827',

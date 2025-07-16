@@ -1,147 +1,130 @@
-# EmpowerFlow - Personal Finance Management App 🚀
+# Finance Management App
 
-EmpowerFlow is a **complete AI-driven personal finance application** that provides users with a personalized financial coach that learns and adapts to their unique spending habits and financial goals.
+A comprehensive finance management application built with React Native (Expo) for the frontend and Express/TypeScript for the backend.
 
-## 🎉 **MVP COMPLETED - ALL LAYERS IMPLEMENTED**
+## Features
 
-### 🧠 **Personalized AI Financial Coach**
-- **Individual Learning**: AI analyzes each user's unique spending patterns and financial personality
-- **Smart Insights**: Behavioral nudges, saving opportunities, and goal optimization suggestions
-- **Confidence Scoring**: AI recommendations come with confidence levels (60-90%+)
-- **Spending Pattern Analysis**: Detects trends, seasonal patterns, and merchant preferences
-- **Proactive Coaching**: "Late night spending detected" and other behavioral insights
+- Transaction management with essential/optional tagging
+- Transaction categorization
+- Financial insights and analytics
+- User-friendly mobile interface
 
-### 🔐 **Secure User Authentication System**
-- **Individual Accounts**: Each user gets their own personalized AI experience
-- **JWT Authentication**: Secure login/registration with password hashing
-- **Data Privacy**: Complete isolation between users - no shared data
-- **Session Management**: Persistent login with secure token storage
-
-### 📊 **All MVP Layers Completed**
-
-#### ✅ **Layer 1: Data Integration & Enhanced Categorization**
-- CSV transaction upload with secure processing
-- AI-powered automatic categorization that learns from user corrections
-- Essential/discretionary transaction tagging
-- Smart categorization rules that improve over time
-
-#### ✅ **Layer 2: AI-Powered Insights & Proactive Nudges**
-- Real-time spending anomaly detection
-- Recurring bill predictions with confidence scoring
-- Personalized behavioral insights (weekend spending, late-night purchases)
-- Proactive financial coaching with actionable advice
-
-#### ✅ **Layer 3: Robust Scenario Planning & Forecasting**
-- What-if scenario modeling (new loans, salary increases, expenses)
-- Future cash flow visualization and impact analysis
-- Monthly budget planning with scenario comparisons
-
-#### ✅ **Layer 4: Enhanced Goal Integration**
-- Dynamic goal tracking connected to spending analysis
-- Smart goal suggestions based on personal financial data
-- Debt management with optimization strategies
-- Progress monitoring with AI-powered recommendations
-
-#### ✅ **Layer 5: Flexible Planning Space**
-- Financial notes and scratchpad for planning
-- Budget adjustment tracking with reasoning
-- Template-based financial planning tools
-- Monthly review and goal setting templates
-
-#### ✅ **Layer 6: Debt Management Tools**
-- Comprehensive debt analysis and payoff strategies
-- Payment strategy comparisons (snowball vs avalanche)
-- Integration with overall financial health monitoring
-- High-interest debt prioritization recommendations
-
-### 🎯 **Personalized AI Features**
-- **Financial Personality Analysis**: Automatically determines spending type (saver/spender/balanced)
-- **Impulse Score Calculation**: Rates impulsive buying behavior (1-10 scale)
-- **Planning Horizon Assessment**: Identifies short/medium/long-term planning style
-- **Smart Goal Generation**: Creates personalized goals based on spending patterns
-- **Saving Opportunity Detection**: Finds unused subscriptions and wasteful spending
-- **Behavioral Pattern Recognition**: Time-based spending analysis and nudges
-
-### 🚀 **Technical Architecture**
-- **Frontend**: React Native with Expo Router, TypeScript, dark theme
-- **Backend**: Node.js/Express with TypeScript, JWT authentication
-- **Database**: Supabase for secure data storage
-- **AI Engine**: Custom financial analysis algorithms with confidence scoring
-- **Testing**: Comprehensive test suite with Jest and Vitest
-- **Mobile**: Fully responsive design optimized for all devices
-
-## Getting Started
-
-### Prerequisites
-
-*   Node.js 18+ and npm
-*   Supabase account for database (https://supabase.com/)
+## Setup Instructions
 
 ### Backend Setup
 
-1.  Navigate to the `backend` directory:
-    ```bash
-    cd backend
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Create a `.env` file with your Supabase credentials:
-    ```env
-    SUPABASE_URL=your_supabase_project_url
-    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-    JWT_SECRET=your_super_secret_jwt_key
-    PORT=8000
-    ```
-4.  Start the backend server:
-    ```bash
-    npm run dev
-    ```
+1. Navigate to the backend directory:
+   ```
+   cd backend
+   ```
+
+2. Create a `.env` file with your Supabase credentials:
+   ```
+   # Supabase Configuration
+   SUPABASE_URL="https://your-project-ref.supabase.co"
+   SUPABASE_ANON_KEY="your-anon-key"
+
+   # Optional: Direct Database URL (for advanced use cases)
+   DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+   ```
+
+3. Install dependencies:
+   ```
+   npm install
+   ```
+
+4. Create the required tables in your Supabase database:
+
+   Run the following SQL in your Supabase SQL Editor:
+
+   ```sql
+   CREATE TABLE transactions (
+     id TEXT PRIMARY KEY,
+     user_id TEXT NOT NULL,
+     account_id TEXT NOT NULL,
+     amount DECIMAL NOT NULL,
+     description TEXT NOT NULL,
+     category TEXT,
+     subcategory TEXT,
+     tag TEXT CHECK (tag IN ('essential', 'discretionary')),
+     posted_date DATE NOT NULL,
+     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
+
+   -- Create indexes for better performance
+   CREATE INDEX idx_transactions_user_id ON transactions(user_id);
+   CREATE INDEX idx_transactions_posted_date ON transactions(posted_date);
+   CREATE INDEX idx_transactions_category ON transactions(category);
+   ```
+
+5. Generate mock data (optional):
+   ```
+   ./start-server.sh --mock-data
+   ```
+
+6. Start the backend server:
+   ```
+   ./start-server.sh
+   ```
+   or
+   ```
+   npm run dev
+   ```
 
 ### Frontend Setup
 
-1.  In a new terminal, navigate to the root directory:
-    ```bash
-    cd ..
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Start the frontend application:
-    ```bash
-    npx expo start --web
-    ```
+1. Navigate to the root directory and install dependencies:
+   ```
+   npm install
+   ```
 
-### First Time Setup
+2. Start the Expo development server:
+   ```
+   npx expo start
+   ```
 
-1. **Create Account**: Visit the welcome page and create your user account
-2. **Upload Data**: Upload a CSV file of your transaction history (Chase format supported)
-3. **AI Analysis**: Watch as your personal AI analyzes your spending patterns
-4. **Explore Features**: Navigate through all tabs to see your personalized insights
+3. Open the app in your preferred environment:
+   - Press `w` to open in a web browser
+   - Press `i` to open in an iOS simulator (requires Xcode)
+   - Press `a` to open in an Android emulator (requires Android Studio)
+   - Scan the QR code with the Expo Go app on your physical device
 
-### 📱 **User Experience Flow**
+## Essential/Optional Tagging Feature
 
-```
-Welcome Screen → Create Account → Upload CSV Data → Personal AI Dashboard
-```
+The app includes a feature to tag transactions as either "Essential" or "Optional" (discretionary):
 
-The application provides a complete personalized financial coaching experience that learns about your unique spending habits!
+1. Each transaction has individual loading states when updating its tag
+2. Only the specific transaction being updated shows the loading state
+3. Other transactions remain interactive during updates
+4. Visual feedback shows the currently selected tag (Essential or Optional)
+5. Buttons are disabled during loading to prevent multiple clicks
 
-## 🏦 Plaid Merchant & Category Enrichment (MVP)
+## Troubleshooting
 
-- After uploading transactions via `/api/upload-csv`, the backend will attempt to enrich each transaction using Plaid (if a Plaid access token is provided in the `x-plaid-access-token` header).
-- If Plaid returns a category, it will be used for the transaction.
-- If Plaid does not return a category or no access token is provided, the system falls back to local categorization logic.
+### Backend Connection Issues
 
-### How to Use
+If you see `ERR_CONNECTION_REFUSED` errors in the frontend:
+- Make sure the backend server is running on port 8000
+- Check that your `.env` file has the correct Supabase credentials
+- Verify that the API URL in the frontend is pointing to the correct backend URL
 
-1. **Set up your Plaid credentials in `.env.development`:**
-   - `PLAID_CLIENT_ID=...`
-   - `PLAID_SECRET=...`
-   - `PLAID_ENV=sandbox`
-2. **Send a CSV upload request with the Plaid access token:**
-   - Add the header: `x-plaid-access-token: <your-access-token>`
-   - Example: `curl -H "x-plaid-access-token: sandbox-..." ...`
-3. **Transactions will be enriched with Plaid categories if available, otherwise local logic is used.**
+### Supabase Connection Issues
+
+If you see `supabaseKey is required` errors:
+- Make sure your `.env` file has the correct `SUPABASE_ANON_KEY` value
+- Restart the backend server after updating the `.env` file
+
+### TypeScript Errors
+
+If you encounter TypeScript errors:
+- Run `npm run build` to check for compilation errors
+- Make sure all required types are properly imported
+
+## Database Schema
+
+See the [Database Setup Guide](docs/DATABASE_SETUP.md) for details on the required database schema and setup instructions.
+
+## Backend API Documentation
+
+See the [Backend README](backend/README.md) for detailed API documentation.
